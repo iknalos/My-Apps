@@ -7,6 +7,7 @@ export default function PlayerCardExample() {
         id="1"
         name="Sarah Johnson"
         gender="Female"
+        club="City Badminton Club"
         singlesRating={1450}
         womensDoublesRating={1620}
         mixedDoublesRating={1580}
@@ -17,6 +18,7 @@ export default function PlayerCardExample() {
         id="2"
         name="Mike Chen"
         gender="Male"
+        club="Metro Sports Center"
         singlesRating={1380}
         mensDoublesRating={1720}
         mixedDoublesRating={1650}

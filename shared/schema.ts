@@ -21,6 +21,7 @@ export const players = pgTable("players", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
   gender: text("gender").notNull(),
+  club: text("club"),
   singlesRating: integer("singles_rating"),
   mensDoublesRating: integer("mens_doubles_rating"),
   womensDoublesRating: integer("womens_doubles_rating"),

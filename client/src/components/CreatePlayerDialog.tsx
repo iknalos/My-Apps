@@ -38,6 +38,7 @@ export default function CreatePlayerDialog() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [name, setName] = useState("");
   const [gender, setGender] = useState("");
+  const [club, setClub] = useState("");
   const [notes, setNotes] = useState("");
 
   const handleCategoryToggle = (category: string) => {
@@ -59,6 +60,7 @@ export default function CreatePlayerDialog() {
     console.log("Player created:", {
       name,
       gender,
+      club,
       preferredCategories: selectedCategories,
       notes,
       ...ratings,
@@ -67,6 +69,7 @@ export default function CreatePlayerDialog() {
     setStep("basic");
     setName("");
     setGender("");
+    setClub("");
     setSelectedCategories([]);
     setNotes("");
   };
@@ -117,6 +120,17 @@ export default function CreatePlayerDialog() {
                       <SelectItem value="Female">Female</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="club">Club (Optional)</Label>
+                  <Input
+                    id="club"
+                    placeholder="e.g. City Badminton Club"
+                    value={club}
+                    onChange={(e) => setClub(e.target.value)}
+                    data-testid="input-club"
+                  />
                 </div>
 
                 <div className="space-y-2">

@@ -2,12 +2,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Edit } from "lucide-react";
+import { Edit, Building2 } from "lucide-react";
 
 interface PlayerCardProps {
   id: string;
   name: string;
   gender: string;
+  club?: string | null;
   singlesRating?: number | null;
   mensDoublesRating?: number | null;
   womensDoublesRating?: number | null;
@@ -19,6 +20,7 @@ interface PlayerCardProps {
 export default function PlayerCard({
   name,
   gender,
+  club,
   singlesRating,
   mensDoublesRating,
   womensDoublesRating,
@@ -54,8 +56,14 @@ export default function PlayerCard({
                 <Edit className="h-4 w-4" />
               </Button>
             </div>
-            <div className="flex flex-wrap gap-2 mb-3">
+            <div className="flex flex-wrap gap-2 mb-2">
               <Badge className={genderColor}>{gender}</Badge>
+              {club && (
+                <Badge variant="outline" className="gap-1">
+                  <Building2 className="h-3 w-3" />
+                  {club}
+                </Badge>
+              )}
             </div>
             
             <div className="space-y-1 mb-3">
