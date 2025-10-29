@@ -6,7 +6,9 @@ BadmintonPro is a web application for managing badminton sessions and player pai
 
 **Core Features:**
 - Player management with category-specific skill ratings
-- Session creation and management with configurable constraints
+- Session creation and management with configurable capacity limits (8, 10, 12, 14, 16, 20 players)
+- Player registration system with event selection
+- Capacity tracking and session status management
 - Gender-aware pairing for mixed doubles
 - Skill-based match balancing
 - Real-time session tracking and score entry
@@ -56,21 +58,26 @@ Preferred communication style: Simple, everyday language.
 **Sessions:**
 - Basic info (name, date, capacity)
 - Configuration (courts available, session types, skill gap constraints)
+- Fixed capacity options: 8, 10, 12, 14, 16, or 20 players
 - Pairing constraints (max skill gap, min games per player)
 - Status tracking (upcoming, active, completed)
 
 **Registrations:**
 - Links players to sessions
-- Tracks selected event types per player
-- Manages waitlist status
+- Tracks selected event types per player (from session's available types)
+- Real-time capacity tracking (shows X/Y players registered)
+- Prevents duplicate registrations
+- Enforces session capacity limits
+- Session marked as "full" when capacity reached
 
 ### Key Architectural Decisions
 
 **Component Architecture:**
-- Reusable dialog patterns for CRUD operations (Create/Edit Player, Create/Edit Session)
-- Card-based layouts for data display (PlayerCard, SessionCard, MatchCard)
+- Reusable dialog patterns for CRUD operations (Create/Edit Player, Create/Edit Session, Join Session)
+- Card-based layouts for data display (PlayerCard, SessionCard with registration count)
 - Centralized state management via TanStack Query with optimistic updates
 - Progressive disclosure pattern for complex features (SkillAssessment multi-step wizard)
+- Real-time capacity tracking via registration queries
 
 **Routing Strategy:**
 - Client-side routing with Wouter (lightweight React Router alternative)
@@ -114,8 +121,14 @@ RESTful endpoints follow convention:
 - `POST /api/players` - Create player
 - `PATCH /api/players/:id` - Update player
 - `DELETE /api/players/:id` - Delete player
-
-Similar patterns for `/api/sessions` and `/api/registrations`.
+- `GET /api/sessions` - List all sessions
+- `GET /api/sessions/:id` - Get single session
+- `POST /api/sessions` - Create session (requires capacity)
+- `PATCH /api/sessions/:id` - Update session
+- `DELETE /api/sessions/:id` - Delete session
+- `GET /api/sessions/:sessionId/registrations` - List registrations for a session
+- `POST /api/sessions/:sessionId/registrations` - Register player for session
+- `DELETE /api/registrations/:id` - Remove registration
 
 **Request/Response Flow:**
 1. Client validates input with Zod schema
