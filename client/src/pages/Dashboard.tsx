@@ -64,13 +64,7 @@ export default function Dashboard() {
             {sessions.map((session) => (
               <SessionCard
                 key={session.id}
-                id={session.id}
-                name={session.name}
-                date={new Date(session.date)}
-                sessionType={session.sessionTypes.join(", ")}
-                courtsAvailable={session.courtsAvailable}
-                participantCount={0}
-                status={session.status as "upcoming" | "active" | "completed"}
+                session={session}
                 onViewDetails={() => console.log("View session:", session.id)}
                 onEdit={() => setEditingSession(session)}
               />

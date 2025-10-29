@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import {
@@ -10,60 +11,19 @@ import {
 } from "@/components/ui/select";
 import SessionCard from "@/components/SessionCard";
 import CreateSessionDialog from "@/components/CreateSessionDialog";
+import EditSessionDialog from "@/components/EditSessionDialog";
+import type { Session } from "@shared/schema";
 
 export default function Sessions() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [editingSession, setEditingSession] = useState<Session | null>(null);
 
-  const mockSessions = [
-    {
-      id: "1",
-      name: "Friday Night Mixed Doubles",
-      date: new Date(2025, 10, 1, 19, 0),
-      sessionType: "Mixed Doubles",
-      courtsAvailable: 4,
-      participantCount: 16,
-      status: "upcoming" as const,
-    },
-    {
-      id: "2",
-      name: "Weekend Warriors",
-      date: new Date(2025, 9, 30, 10, 0),
-      sessionType: "Open Play",
-      courtsAvailable: 6,
-      participantCount: 24,
-      status: "active" as const,
-    },
-    {
-      id: "3",
-      name: "Tuesday Training",
-      date: new Date(2025, 9, 27, 18, 0),
-      sessionType: "Singles",
-      courtsAvailable: 3,
-      participantCount: 12,
-      status: "completed" as const,
-    },
-    {
-      id: "4",
-      name: "Monday Mixed",
-      date: new Date(2025, 10, 4, 18, 30),
-      sessionType: "Mixed Doubles",
-      courtsAvailable: 5,
-      participantCount: 20,
-      status: "upcoming" as const,
-    },
-    {
-      id: "5",
-      name: "Saturday Open",
-      date: new Date(2025, 9, 23, 14, 0),
-      sessionType: "Open Play",
-      courtsAvailable: 4,
-      participantCount: 18,
-      status: "completed" as const,
-    },
-  ];
+  const { data: sessions = [], isLoading } = useQuery<Session[]>({
+    queryKey: ["/api/sessions"],
+  });
 
-  const filteredSessions = mockSessions.filter((session) => {
+  const filteredSessions = sessions.filter((session) => {
     const matchesSearch = session.name
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
@@ -109,20 +69,33 @@ export default function Sessions() {
         </Select>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-        {filteredSessions.map((session) => (
-          <SessionCard
-            key={session.id}
-            {...session}
-            onViewDetails={() => console.log("View session:", session.id)}
-          />
-        ))}
-      </div>
-
-      {filteredSessions.length === 0 && (
+      {isLoading ? (
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">Loading sessions...</p>
+        </div>
+      ) : filteredSessions.length === 0 ? (
         <div className="text-center py-12">
           <p className="text-muted-foreground">No sessions found</p>
         </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+          {filteredSessions.map((session) => (
+            <SessionCard
+              key={session.id}
+              session={session}
+              onViewDetails={() => console.log("View session:", session.id)}
+              onEdit={() => setEditingSession(session)}
+            />
+          ))}
+        </div>
+      )}
+
+      {editingSession && (
+        <EditSessionDialog
+          session={editingSession}
+          open={!!editingSession}
+          onOpenChange={(open) => !open && setEditingSession(null)}
+        />
       )}
     </div>
   );
