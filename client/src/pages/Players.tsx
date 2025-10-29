@@ -1,15 +1,19 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import PlayerCard from "@/components/PlayerCard";
 import CreatePlayerDialog from "@/components/CreatePlayerDialog";
+import type { Player } from "@shared/schema";
 
 export default function Players() {
   const [searchQuery, setSearchQuery] = useState("");
 
-  const mockPlayers: any[] = [];
+  const { data: players = [], isLoading } = useQuery<Player[]>({
+    queryKey: ["/api/players"],
+  });
 
-  const filteredPlayers = mockPlayers.filter((player) =>
+  const filteredPlayers = players.filter((player) =>
     player.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -37,20 +41,32 @@ export default function Players() {
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredPlayers.map((player) => (
-          <PlayerCard
-            key={player.id}
-            {...player}
-            onEdit={() => console.log("Edit player:", player.id)}
-          />
-        ))}
-      </div>
-
-      {filteredPlayers.length === 0 && (
+      {isLoading ? (
         <div className="text-center py-12">
-          <p className="text-muted-foreground">No players found. Click "Add Player" to create your first player.</p>
+          <p className="text-muted-foreground">Loading players...</p>
         </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredPlayers.map((player) => (
+              <PlayerCard
+                key={player.id}
+                {...player}
+                onEdit={() => console.log("Edit player:", player.id)}
+              />
+            ))}
+          </div>
+
+          {filteredPlayers.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">
+                {players.length === 0
+                  ? 'No players found. Click "Add Player" to create your first player.'
+                  : "No players match your search."}
+              </p>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

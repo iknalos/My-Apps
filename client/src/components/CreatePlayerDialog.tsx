@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -21,7 +22,10 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { UserPlus } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import SkillAssessment from "./SkillAssessment";
+import type { InsertPlayer } from "@shared/schema";
 
 const categories = ["Singles", "Men's Doubles", "Women's Doubles", "Mixed Doubles"];
 
@@ -40,6 +44,39 @@ export default function CreatePlayerDialog() {
   const [gender, setGender] = useState("");
   const [club, setClub] = useState("");
   const [notes, setNotes] = useState("");
+  const { toast } = useToast();
+
+  const createPlayerMutation = useMutation({
+    mutationFn: async (player: InsertPlayer) => {
+      const response = await apiRequest("POST", "/api/players", player);
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/players"] });
+      toast({
+        title: "Success",
+        description: "Player created successfully",
+      });
+      setOpen(false);
+      resetForm();
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to create player",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const resetForm = () => {
+    setStep("basic");
+    setName("");
+    setGender("");
+    setClub("");
+    setSelectedCategories([]);
+    setNotes("");
+  };
 
   const handleCategoryToggle = (category: string) => {
     setSelectedCategories((prev) =>
@@ -57,21 +94,16 @@ export default function CreatePlayerDialog() {
   };
 
   const handleAssessmentComplete = (ratings: CategoryRatings) => {
-    console.log("Player created:", {
+    const playerData: InsertPlayer = {
       name,
       gender,
-      club,
+      club: club || null,
       preferredCategories: selectedCategories,
-      notes,
+      notes: notes || null,
       ...ratings,
-    });
-    setOpen(false);
-    setStep("basic");
-    setName("");
-    setGender("");
-    setClub("");
-    setSelectedCategories([]);
-    setNotes("");
+    };
+
+    createPlayerMutation.mutate(playerData);
   };
 
   const handleBack = () => {
