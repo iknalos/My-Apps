@@ -77,6 +77,17 @@ export default function CreateSessionDialog() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    console.log("Form submitted with:", { name, date, courtsAvailable, selectedTypes });
+
+    if (!name || !date || !courtsAvailable || selectedTypes.length === 0) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const sessionData: InsertSession = {
       name,
       date: new Date(date),
@@ -89,6 +100,11 @@ export default function CreateSessionDialog() {
 
     createSessionMutation.mutate(sessionData);
   };
+
+  const isFormValid = name.trim() !== "" && 
+                      date !== "" && 
+                      courtsAvailable !== "" && 
+                      selectedTypes.length > 0;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -108,31 +124,29 @@ export default function CreateSessionDialog() {
         <form onSubmit={handleSubmit}>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="session-name">Session Name</Label>
+              <Label htmlFor="session-name">Session Name *</Label>
               <Input
                 id="session-name"
                 placeholder="e.g. Friday Night Badminton"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                required
                 data-testid="input-session-name"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="date">Date & Time</Label>
+                <Label htmlFor="date">Date & Time *</Label>
                 <Input
                   id="date"
                   type="datetime-local"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  required
                   data-testid="input-session-date"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="courts">Courts Available</Label>
+                <Label htmlFor="courts">Courts Available *</Label>
                 <Input
                   id="courts"
                   type="number"
@@ -140,14 +154,13 @@ export default function CreateSessionDialog() {
                   min="1"
                   value={courtsAvailable}
                   onChange={(e) => setCourtsAvailable(e.target.value)}
-                  required
                   data-testid="input-courts"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label>Session Types</Label>
+              <Label>Session Types *</Label>
               <p className="text-sm text-muted-foreground">
                 Select one or more session types for this event
               </p>
@@ -169,6 +182,11 @@ export default function CreateSessionDialog() {
                   </div>
                 ))}
               </div>
+              {selectedTypes.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Selected: {selectedTypes.join(", ")}
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -202,7 +220,7 @@ export default function CreateSessionDialog() {
             </Button>
             <Button
               type="submit"
-              disabled={!name || !date || !courtsAvailable || selectedTypes.length === 0 || createSessionMutation.isPending}
+              disabled={!isFormValid || createSessionMutation.isPending}
               data-testid="button-submit-session"
             >
               {createSessionMutation.isPending ? "Creating..." : "Create Session"}
