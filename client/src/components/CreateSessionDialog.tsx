@@ -29,7 +29,8 @@ const sessionTypeOptions = [
 export default function CreateSessionDialog() {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
-  const [date, setDate] = useState("");
+  const [sessionDate, setSessionDate] = useState("");
+  const [sessionTime, setSessionTime] = useState("19:00");
   const [courtsAvailable, setCourtsAvailable] = useState("");
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [maxSkillGap, setMaxSkillGap] = useState("");
@@ -61,7 +62,8 @@ export default function CreateSessionDialog() {
 
   const resetForm = () => {
     setName("");
-    setDate("");
+    setSessionDate("");
+    setSessionTime("19:00");
     setCourtsAvailable("");
     setSelectedTypes([]);
     setMaxSkillGap("");
@@ -77,9 +79,7 @@ export default function CreateSessionDialog() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    console.log("Form submitted with:", { name, date, courtsAvailable, selectedTypes });
-
-    if (!name || !date || !courtsAvailable || selectedTypes.length === 0) {
+    if (!name || !sessionDate || !sessionTime || !courtsAvailable || selectedTypes.length === 0) {
       toast({
         title: "Validation Error",
         description: "Please fill in all required fields",
@@ -88,9 +88,10 @@ export default function CreateSessionDialog() {
       return;
     }
 
+    const dateTimeString = `${sessionDate}T${sessionTime}`;
     const sessionData: InsertSession = {
       name,
-      date: new Date(date),
+      date: new Date(dateTimeString),
       sessionTypes: selectedTypes,
       courtsAvailable: parseInt(courtsAvailable),
       maxSkillGap: maxSkillGap ? parseInt(maxSkillGap) : null,
@@ -102,7 +103,8 @@ export default function CreateSessionDialog() {
   };
 
   const isFormValid = name.trim() !== "" && 
-                      date !== "" && 
+                      sessionDate !== "" && 
+                      sessionTime !== "" &&
                       courtsAvailable !== "" && 
                       selectedTypes.length > 0;
 
@@ -136,27 +138,38 @@ export default function CreateSessionDialog() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="date">Date & Time *</Label>
+                <Label htmlFor="session-date">Date *</Label>
                 <Input
-                  id="date"
-                  type="datetime-local"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
+                  id="session-date"
+                  type="date"
+                  value={sessionDate}
+                  onChange={(e) => setSessionDate(e.target.value)}
                   data-testid="input-session-date"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="courts">Courts Available *</Label>
+                <Label htmlFor="session-time">Time *</Label>
                 <Input
-                  id="courts"
-                  type="number"
-                  placeholder="4"
-                  min="1"
-                  value={courtsAvailable}
-                  onChange={(e) => setCourtsAvailable(e.target.value)}
-                  data-testid="input-courts"
+                  id="session-time"
+                  type="time"
+                  value={sessionTime}
+                  onChange={(e) => setSessionTime(e.target.value)}
+                  data-testid="input-session-time"
                 />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="courts">Courts Available *</Label>
+              <Input
+                id="courts"
+                type="number"
+                placeholder="4"
+                min="1"
+                value={courtsAvailable}
+                onChange={(e) => setCourtsAvailable(e.target.value)}
+                data-testid="input-courts"
+              />
             </div>
 
             <div className="space-y-2">
