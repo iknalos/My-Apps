@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertPlayerSchema, insertSessionSchema } from "@shared/schema";
+import { insertPlayerSchema, insertSessionSchema, insertRegistrationSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Player routes
@@ -126,6 +126,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete session" });
+    }
+  });
+
+  // Registration routes
+  app.get("/api/sessions/:sessionId/registrations", async (req, res) => {
+    try {
+      const registrations = await storage.getRegistrationsBySession(req.params.sessionId);
+      res.json(registrations);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch registrations" });
+    }
+  });
+
+  app.post("/api/sessions/:sessionId/registrations", async (req, res) => {
+    try {
+      const { playerId, selectedEvents } = req.body;
+      
+      // Check if player is already registered
+      const existing = await storage.getRegistrationByPlayerAndSession(playerId, req.params.sessionId);
+      if (existing) {
+        return res.status(400).json({ error: "Player already registered" });
+      }
+
+      // Check session capacity
+      const session = await storage.getSession(req.params.sessionId);
+      if (!session) {
+        return res.status(404).json({ error: "Session not found" });
+      }
+
+      const registrations = await storage.getRegistrationsBySession(req.params.sessionId);
+      if (registrations.length >= session.capacity) {
+        return res.status(400).json({ error: "Session is full" });
+      }
+
+      const registrationData = {
+        sessionId: req.params.sessionId,
+        playerId,
+        selectedEvents,
+      };
+
+      const validatedData = insertRegistrationSchema.parse(registrationData);
+      const registration = await storage.createRegistration(validatedData);
+      res.status(201).json(registration);
+    } catch (error) {
+      console.error("Registration error:", error);
+      res.status(400).json({ error: "Failed to register for session" });
+    }
+  });
+
+  app.delete("/api/registrations/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteRegistration(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Registration not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete registration" });
     }
   });
 
