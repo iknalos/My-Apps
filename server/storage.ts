@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type Player, type InsertPlayer, type Session, type InsertSession } from "@shared/schema";
+import { type User, type InsertUser, type Player, type InsertPlayer, type Session, type InsertSession, type Registration, type InsertRegistration } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -17,17 +17,24 @@ export interface IStorage {
   createSession(session: InsertSession): Promise<Session>;
   updateSession(id: string, session: Partial<InsertSession>): Promise<Session | undefined>;
   deleteSession(id: string): Promise<boolean>;
+
+  getRegistrationsBySession(sessionId: string): Promise<Registration[]>;
+  getRegistrationByPlayerAndSession(playerId: string, sessionId: string): Promise<Registration | undefined>;
+  createRegistration(registration: InsertRegistration): Promise<Registration>;
+  deleteRegistration(id: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
   private users: Map<string, User>;
   private players: Map<string, Player>;
   private sessions: Map<string, Session>;
+  private registrations: Map<string, Registration>;
 
   constructor() {
     this.users = new Map();
     this.players = new Map();
     this.sessions = new Map();
+    this.registrations = new Map();
   }
 
   async getUser(id: string): Promise<User | undefined> {
@@ -102,6 +109,7 @@ export class MemStorage implements IStorage {
       name: insertSession.name,
       date: insertSession.date,
       sessionTypes: insertSession.sessionTypes,
+      capacity: insertSession.capacity,
       courtsAvailable: insertSession.courtsAvailable,
       maxSkillGap: insertSession.maxSkillGap ?? null,
       minGamesPerPlayer: insertSession.minGamesPerPlayer ?? null,
@@ -123,6 +131,35 @@ export class MemStorage implements IStorage {
 
   async deleteSession(id: string): Promise<boolean> {
     return this.sessions.delete(id);
+  }
+
+  async getRegistrationsBySession(sessionId: string): Promise<Registration[]> {
+    return Array.from(this.registrations.values()).filter(
+      (reg) => reg.sessionId === sessionId
+    );
+  }
+
+  async getRegistrationByPlayerAndSession(playerId: string, sessionId: string): Promise<Registration | undefined> {
+    return Array.from(this.registrations.values()).find(
+      (reg) => reg.playerId === playerId && reg.sessionId === sessionId
+    );
+  }
+
+  async createRegistration(insertRegistration: InsertRegistration): Promise<Registration> {
+    const id = randomUUID();
+    const registration: Registration = {
+      id,
+      sessionId: insertRegistration.sessionId,
+      playerId: insertRegistration.playerId,
+      selectedEvents: insertRegistration.selectedEvents,
+      createdAt: new Date(),
+    };
+    this.registrations.set(id, registration);
+    return registration;
+  }
+
+  async deleteRegistration(id: string): Promise<boolean> {
+    return this.registrations.delete(id);
   }
 }
 
