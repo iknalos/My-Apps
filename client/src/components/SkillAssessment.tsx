@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -20,6 +20,7 @@ interface CategoryRatings {
 
 interface SkillAssessmentProps {
   gender: string;
+  preferredCategories: string[];
   onComplete: (ratings: CategoryRatings) => void;
   onBack?: () => void;
 }
@@ -71,18 +72,51 @@ const mixedDoublesQuestions: Question[] = [
   { id: "mixed_10", text: "Partnership dynamics and on-court communication" },
 ];
 
-export default function SkillAssessment({ gender, onComplete, onBack }: SkillAssessmentProps) {
-  const [currentCategory, setCurrentCategory] = useState<"singles" | "doubles" | "mixed">("singles");
+type CategoryType = "singles" | "doubles" | "mixed";
+
+export default function SkillAssessment({ gender, preferredCategories, onComplete, onBack }: SkillAssessmentProps) {
+  const [activeCategories, setActiveCategories] = useState<CategoryType[]>([]);
+  const [currentCategoryIndex, setCurrentCategoryIndex] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
 
-  const getCategoryQuestions = () => {
-    if (currentCategory === "singles") return singlesQuestions;
-    if (currentCategory === "mixed") return mixedDoublesQuestions;
+  useEffect(() => {
+    const categories: CategoryType[] = [];
+    
+    if (preferredCategories.includes("Singles")) {
+      categories.push("singles");
+    }
+    
+    if (preferredCategories.includes("Men's Doubles") || preferredCategories.includes("Women's Doubles")) {
+      categories.push("doubles");
+    }
+    
+    if (preferredCategories.includes("Mixed Doubles")) {
+      categories.push("mixed");
+    }
+    
+    setActiveCategories(categories);
+  }, [preferredCategories]);
+
+  if (activeCategories.length === 0) {
+    return null;
+  }
+
+  const currentCategory = activeCategories[currentCategoryIndex];
+
+  const getCategoryQuestions = (category: CategoryType) => {
+    if (category === "singles") return singlesQuestions;
+    if (category === "mixed") return mixedDoublesQuestions;
     return doublesQuestions;
   };
 
-  const questions = getCategoryQuestions();
+  const getCategoryLabel = (category: CategoryType) => {
+    if (category === "singles") return "Singles";
+    if (category === "mixed") return "Mixed Doubles";
+    return gender === "Male" ? "Men's Doubles" : "Women's Doubles";
+  };
+
+  const questions = getCategoryQuestions(currentCategory);
   const currentQuestion = questions[currentQuestionIndex];
   const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
 
@@ -98,7 +132,7 @@ export default function SkillAssessment({ gender, onComplete, onBack }: SkillAss
       key.startsWith(categoryPrefix)
     );
     
-    if (categoryAnswers.length === 0) return 1000;
+    if (categoryAnswers.length === 0) return null;
     
     const totalPoints = categoryAnswers.reduce((sum, [, val]) => sum + val, 0);
     const averageRating = totalPoints / categoryAnswers.length;
@@ -118,17 +152,23 @@ export default function SkillAssessment({ gender, onComplete, onBack }: SkillAss
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
     } else {
-      if (currentCategory === "singles") {
-        setCurrentCategory("doubles");
-        setCurrentQuestionIndex(0);
-      } else if (currentCategory === "doubles") {
-        setCurrentCategory("mixed");
+      // Move to next category or complete
+      if (currentCategoryIndex < activeCategories.length - 1) {
+        setCurrentCategoryIndex(currentCategoryIndex + 1);
         setCurrentQuestionIndex(0);
       } else {
         // Calculate final ratings
-        const singlesRating = calculateRating("singles");
-        const doublesRating = calculateRating("doubles");
-        const mixedRating = calculateRating("mixed");
+        const singlesRating = activeCategories.includes("singles") 
+          ? calculateRating("singles") 
+          : null;
+        
+        const doublesRating = activeCategories.includes("doubles")
+          ? calculateRating("doubles")
+          : null;
+        
+        const mixedRating = activeCategories.includes("mixed")
+          ? calculateRating("mixed")
+          : null;
 
         onComplete({
           singlesRating,
@@ -143,31 +183,26 @@ export default function SkillAssessment({ gender, onComplete, onBack }: SkillAss
   const handlePrevious = () => {
     if (currentQuestionIndex > 0) {
       setCurrentQuestionIndex(currentQuestionIndex - 1);
-    } else if (currentCategory === "doubles") {
-      setCurrentCategory("singles");
-      setCurrentQuestionIndex(singlesQuestions.length - 1);
-    } else if (currentCategory === "mixed") {
-      setCurrentCategory("doubles");
-      setCurrentQuestionIndex(doublesQuestions.length - 1);
+    } else if (currentCategoryIndex > 0) {
+      const prevCategory = activeCategories[currentCategoryIndex - 1];
+      const prevQuestions = getCategoryQuestions(prevCategory);
+      setCurrentCategoryIndex(currentCategoryIndex - 1);
+      setCurrentQuestionIndex(prevQuestions.length - 1);
     } else if (onBack) {
       onBack();
     }
   };
 
   const canProceed = answers[currentQuestion.id] !== undefined;
+  const isLastQuestion = currentQuestionIndex === questions.length - 1 && 
+                        currentCategoryIndex === activeCategories.length - 1;
 
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between mb-2">
           <Badge variant="outline" className="capitalize">
-            {currentCategory === "doubles"
-              ? gender === "Male"
-                ? "Men's Doubles"
-                : "Women's Doubles"
-              : currentCategory === "mixed"
-              ? "Mixed Doubles"
-              : "Singles"}
+            {getCategoryLabel(currentCategory)}
           </Badge>
           <span className="text-sm text-muted-foreground">
             Question {currentQuestionIndex + 1} of {questions.length}
@@ -228,8 +263,7 @@ export default function SkillAssessment({ gender, onComplete, onBack }: SkillAss
             disabled={!canProceed}
             data-testid="button-next"
           >
-            {currentQuestionIndex === questions.length - 1 &&
-            currentCategory === "mixed"
+            {isLastQuestion
               ? "Complete Assessment"
               : currentQuestionIndex === questions.length - 1
               ? "Next Category"

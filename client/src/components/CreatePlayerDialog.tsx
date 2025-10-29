@@ -204,6 +204,7 @@ export default function CreatePlayerDialog() {
             <div className="py-4">
               <SkillAssessment
                 gender={gender}
+                preferredCategories={selectedCategories}
                 onComplete={handleAssessmentComplete}
                 onBack={handleBack}
               />
