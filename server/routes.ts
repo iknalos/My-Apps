@@ -32,6 +32,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const player = await storage.createPlayer(validatedData);
       res.status(201).json(player);
     } catch (error) {
+      console.error("Player creation error:", error);
       res.status(400).json({ error: "Invalid player data" });
     }
   });
@@ -84,11 +85,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/sessions", async (req, res) => {
     try {
+      console.log("Received session data:", req.body);
       const validatedData = insertSessionSchema.parse(req.body);
+      console.log("Validated session data:", validatedData);
       const session = await storage.createSession(validatedData);
       res.status(201).json(session);
     } catch (error) {
-      res.status(400).json({ error: "Invalid session data" });
+      console.error("Session creation error:", error);
+      res.status(400).json({ error: "Invalid session data", details: error });
     }
   });
 
