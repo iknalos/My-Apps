@@ -85,20 +85,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/sessions", async (req, res) => {
     try {
-      console.log("Received session data:", req.body);
-      const validatedData = insertSessionSchema.parse(req.body);
-      console.log("Validated session data:", validatedData);
+      // Convert date string to Date object
+      const sessionData = {
+        ...req.body,
+        date: new Date(req.body.date),
+      };
+      
+      const validatedData = insertSessionSchema.parse(sessionData);
       const session = await storage.createSession(validatedData);
       res.status(201).json(session);
     } catch (error) {
       console.error("Session creation error:", error);
-      res.status(400).json({ error: "Invalid session data", details: error });
+      res.status(400).json({ error: "Invalid session data" });
     }
   });
 
   app.patch("/api/sessions/:id", async (req, res) => {
     try {
-      const session = await storage.updateSession(req.params.id, req.body);
+      // Convert date string to Date object if present
+      const updates = req.body.date
+        ? { ...req.body, date: new Date(req.body.date) }
+        : req.body;
+      
+      const session = await storage.updateSession(req.params.id, updates);
       if (!session) {
         return res.status(404).json({ error: "Session not found" });
       }
