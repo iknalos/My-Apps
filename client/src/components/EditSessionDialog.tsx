@@ -12,6 +12,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { Session, InsertSession } from "@shared/schema";
@@ -24,6 +31,8 @@ const sessionTypeOptions = [
   "Open Play",
 ];
 
+const capacityOptions = [8, 10, 12, 14, 16, 20];
+
 interface EditSessionDialogProps {
   session: Session;
   open: boolean;
@@ -35,6 +44,7 @@ export default function EditSessionDialog({ session, open, onOpenChange }: EditS
   const [date, setDate] = useState(
     new Date(session.date).toISOString().slice(0, 16)
   );
+  const [capacity, setCapacity] = useState(session.capacity.toString());
   const [courtsAvailable, setCourtsAvailable] = useState(session.courtsAvailable.toString());
   const [selectedTypes, setSelectedTypes] = useState<string[]>(session.sessionTypes);
   const [maxSkillGap, setMaxSkillGap] = useState(session.maxSkillGap?.toString() || "");
@@ -76,6 +86,7 @@ export default function EditSessionDialog({ session, open, onOpenChange }: EditS
       name,
       date: new Date(date),
       sessionTypes: selectedTypes,
+      capacity: parseInt(capacity),
       courtsAvailable: parseInt(courtsAvailable),
       maxSkillGap: maxSkillGap ? parseInt(maxSkillGap) : null,
       minGamesPerPlayer: minGamesPerPlayer ? parseInt(minGamesPerPlayer) : null,
@@ -108,17 +119,33 @@ export default function EditSessionDialog({ session, open, onOpenChange }: EditS
               />
             </div>
 
+            <div className="space-y-2">
+              <Label htmlFor="edit-date">Date & Time</Label>
+              <Input
+                id="edit-date"
+                type="datetime-local"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                required
+                data-testid="input-edit-session-date"
+              />
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-date">Date & Time</Label>
-                <Input
-                  id="edit-date"
-                  type="datetime-local"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  required
-                  data-testid="input-edit-session-date"
-                />
+                <Label htmlFor="edit-capacity">Capacity</Label>
+                <Select value={capacity} onValueChange={setCapacity}>
+                  <SelectTrigger data-testid="select-edit-capacity">
+                    <SelectValue placeholder="Select capacity" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {capacityOptions.map((cap) => (
+                      <SelectItem key={cap} value={String(cap)} data-testid={`option-edit-capacity-${cap}`}>
+                        {cap} players
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-courts">Courts Available</Label>
@@ -191,7 +218,7 @@ export default function EditSessionDialog({ session, open, onOpenChange }: EditS
             </Button>
             <Button
               type="submit"
-              disabled={!name || !date || !courtsAvailable || selectedTypes.length === 0 || updateSessionMutation.isPending}
+              disabled={!name || !date || !capacity || !courtsAvailable || selectedTypes.length === 0 || updateSessionMutation.isPending}
               data-testid="button-save-session"
             >
               {updateSessionMutation.isPending ? "Saving..." : "Save Changes"}

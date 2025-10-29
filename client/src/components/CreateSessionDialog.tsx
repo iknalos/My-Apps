@@ -13,6 +13,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -26,11 +33,14 @@ const sessionTypeOptions = [
   "Open Play",
 ];
 
+const capacityOptions = [8, 10, 12, 14, 16, 20];
+
 export default function CreateSessionDialog() {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [sessionDate, setSessionDate] = useState("");
   const [sessionTime, setSessionTime] = useState("19:00");
+  const [capacity, setCapacity] = useState("");
   const [courtsAvailable, setCourtsAvailable] = useState("");
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [maxSkillGap, setMaxSkillGap] = useState("");
@@ -64,6 +74,7 @@ export default function CreateSessionDialog() {
     setName("");
     setSessionDate("");
     setSessionTime("19:00");
+    setCapacity("");
     setCourtsAvailable("");
     setSelectedTypes([]);
     setMaxSkillGap("");
@@ -79,7 +90,7 @@ export default function CreateSessionDialog() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!name || !sessionDate || !sessionTime || !courtsAvailable || selectedTypes.length === 0) {
+    if (!name || !sessionDate || !sessionTime || !capacity || !courtsAvailable || selectedTypes.length === 0) {
       toast({
         title: "Validation Error",
         description: "Please fill in all required fields",
@@ -93,6 +104,7 @@ export default function CreateSessionDialog() {
       name,
       date: new Date(dateTimeString),
       sessionTypes: selectedTypes,
+      capacity: parseInt(capacity),
       courtsAvailable: parseInt(courtsAvailable),
       maxSkillGap: maxSkillGap ? parseInt(maxSkillGap) : null,
       minGamesPerPlayer: minGamesPerPlayer ? parseInt(minGamesPerPlayer) : null,
@@ -105,6 +117,7 @@ export default function CreateSessionDialog() {
   const isFormValid = name.trim() !== "" && 
                       sessionDate !== "" && 
                       sessionTime !== "" &&
+                      capacity !== "" &&
                       courtsAvailable !== "" && 
                       selectedTypes.length > 0;
 
@@ -159,17 +172,34 @@ export default function CreateSessionDialog() {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="courts">Courts Available *</Label>
-              <Input
-                id="courts"
-                type="number"
-                placeholder="4"
-                min="1"
-                value={courtsAvailable}
-                onChange={(e) => setCourtsAvailable(e.target.value)}
-                data-testid="input-courts"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="capacity">Capacity *</Label>
+                <Select value={capacity} onValueChange={setCapacity}>
+                  <SelectTrigger data-testid="select-capacity">
+                    <SelectValue placeholder="Select capacity" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {capacityOptions.map((cap) => (
+                      <SelectItem key={cap} value={String(cap)} data-testid={`option-capacity-${cap}`}>
+                        {cap} players
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="courts">Courts Available *</Label>
+                <Input
+                  id="courts"
+                  type="number"
+                  placeholder="4"
+                  min="1"
+                  value={courtsAvailable}
+                  onChange={(e) => setCourtsAvailable(e.target.value)}
+                  data-testid="input-courts"
+                />
+              </div>
             </div>
 
             <div className="space-y-2">
