@@ -7,68 +7,7 @@ import CreatePlayerDialog from "@/components/CreatePlayerDialog";
 export default function Players() {
   const [searchQuery, setSearchQuery] = useState("");
 
-  const mockPlayers = [
-    {
-      id: "1",
-      name: "Sarah Johnson",
-      gender: "Female",
-      club: "City Badminton Club",
-      singlesRating: 1450,
-      womensDoublesRating: 1620,
-      mixedDoublesRating: 1580,
-      preferredCategories: ["Singles", "Women's Doubles", "Mixed Doubles"],
-    },
-    {
-      id: "2",
-      name: "Mike Chen",
-      gender: "Male",
-      club: "Metro Sports Center",
-      singlesRating: 1380,
-      mensDoublesRating: 1720,
-      mixedDoublesRating: 1650,
-      preferredCategories: ["Men's Doubles", "Mixed Doubles"],
-    },
-    {
-      id: "3",
-      name: "Emma Davis",
-      gender: "Female",
-      club: "City Badminton Club",
-      singlesRating: 1320,
-      womensDoublesRating: 1380,
-      mixedDoublesRating: 1420,
-      preferredCategories: ["Singles", "Women's Doubles", "Mixed Doubles"],
-    },
-    {
-      id: "4",
-      name: "Tom Wilson",
-      gender: "Male",
-      club: null,
-      singlesRating: null,
-      mensDoublesRating: 1550,
-      mixedDoublesRating: 1490,
-      preferredCategories: ["Men's Doubles", "Mixed Doubles"],
-    },
-    {
-      id: "5",
-      name: "Lisa Park",
-      gender: "Female",
-      club: "Summit Badminton",
-      singlesRating: 1720,
-      womensDoublesRating: 1650,
-      mixedDoublesRating: null,
-      preferredCategories: ["Singles", "Women's Doubles"],
-    },
-    {
-      id: "6",
-      name: "David Lee",
-      gender: "Male",
-      club: "Metro Sports Center",
-      singlesRating: 1490,
-      mensDoublesRating: 1520,
-      mixedDoublesRating: 1470,
-      preferredCategories: ["Singles", "Men's Doubles", "Mixed Doubles"],
-    },
-  ];
+  const mockPlayers: any[] = [];
 
   const filteredPlayers = mockPlayers.filter((player) =>
     player.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -110,7 +49,7 @@ export default function Players() {
 
       {filteredPlayers.length === 0 && (
         <div className="text-center py-12">
-          <p className="text-muted-foreground">No players found</p>
+          <p className="text-muted-foreground">No players found. Click "Add Player" to create your first player.</p>
         </div>
       )}
     </div>
