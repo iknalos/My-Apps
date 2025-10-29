@@ -1,39 +1,18 @@
-import { Users, Calendar, Trophy, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Users, Calendar, Trophy } from "lucide-react";
 import SessionCard from "@/components/SessionCard";
 import StatCard from "@/components/StatCard";
 import CreateSessionDialog from "@/components/CreateSessionDialog";
+import EditSessionDialog from "@/components/EditSessionDialog";
+import type { Session } from "@shared/schema";
 
 export default function Dashboard() {
-  const mockSessions = [
-    {
-      id: "1",
-      name: "Friday Night Mixed Doubles",
-      date: new Date(2025, 10, 1, 19, 0),
-      sessionType: "Mixed Doubles",
-      courtsAvailable: 4,
-      participantCount: 16,
-      status: "upcoming" as const,
-    },
-    {
-      id: "2",
-      name: "Weekend Warriors",
-      date: new Date(2025, 9, 30, 10, 0),
-      sessionType: "Open Play",
-      courtsAvailable: 6,
-      participantCount: 24,
-      status: "active" as const,
-    },
-    {
-      id: "3",
-      name: "Tuesday Training",
-      date: new Date(2025, 9, 27, 18, 0),
-      sessionType: "Singles",
-      courtsAvailable: 3,
-      participantCount: 12,
-      status: "completed" as const,
-    },
-  ];
+  const [editingSession, setEditingSession] = useState<Session | null>(null);
+
+  const { data: sessions = [], isLoading } = useQuery<Session[]>({
+    queryKey: ["/api/sessions"],
+  });
 
   return (
     <div className="space-y-6">
@@ -50,33 +29,63 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <StatCard
           title="Total Players"
-          value={127}
+          value={0}
           icon={Users}
           subtitle="Active this month"
-          trend={{ value: 12, isPositive: true }}
         />
-        <StatCard title="Sessions" value={8} icon={Calendar} subtitle="This month" />
+        <StatCard 
+          title="Sessions" 
+          value={sessions.length} 
+          icon={Calendar} 
+          subtitle="Total sessions" 
+        />
         <StatCard
           title="Matches Played"
-          value={342}
+          value={0}
           icon={Trophy}
           subtitle="All time"
-          trend={{ value: 8, isPositive: true }}
         />
       </div>
 
       <div>
-        <h2 className="text-2xl font-semibold mb-4">Recent Sessions</h2>
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-          {mockSessions.map((session) => (
-            <SessionCard
-              key={session.id}
-              {...session}
-              onViewDetails={() => console.log("View session:", session.id)}
-            />
-          ))}
-        </div>
+        <h2 className="text-2xl font-semibold mb-4">Sessions</h2>
+        {isLoading ? (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">Loading sessions...</p>
+          </div>
+        ) : sessions.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">
+              No sessions found. Click "Create Session" to get started.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+            {sessions.map((session) => (
+              <SessionCard
+                key={session.id}
+                id={session.id}
+                name={session.name}
+                date={new Date(session.date)}
+                sessionType={session.sessionTypes.join(", ")}
+                courtsAvailable={session.courtsAvailable}
+                participantCount={0}
+                status={session.status as "upcoming" | "active" | "completed"}
+                onViewDetails={() => console.log("View session:", session.id)}
+                onEdit={() => setEditingSession(session)}
+              />
+            ))}
+          </div>
+        )}
       </div>
+
+      {editingSession && (
+        <EditSessionDialog
+          session={editingSession}
+          open={!!editingSession}
+          onOpenChange={(open) => !open && setEditingSession(null)}
+        />
+      )}
     </div>
   );
 }

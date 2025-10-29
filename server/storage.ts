@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type Player, type InsertPlayer } from "@shared/schema";
+import { type User, type InsertUser, type Player, type InsertPlayer, type Session, type InsertSession } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -11,15 +11,23 @@ export interface IStorage {
   createPlayer(player: InsertPlayer): Promise<Player>;
   updatePlayer(id: string, player: Partial<InsertPlayer>): Promise<Player | undefined>;
   deletePlayer(id: string): Promise<boolean>;
+
+  getAllSessions(): Promise<Session[]>;
+  getSession(id: string): Promise<Session | undefined>;
+  createSession(session: InsertSession): Promise<Session>;
+  updateSession(id: string, session: Partial<InsertSession>): Promise<Session | undefined>;
+  deleteSession(id: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
   private users: Map<string, User>;
   private players: Map<string, Player>;
+  private sessions: Map<string, Session>;
 
   constructor() {
     this.users = new Map();
     this.players = new Map();
+    this.sessions = new Map();
   }
 
   async getUser(id: string): Promise<User | undefined> {
@@ -77,6 +85,44 @@ export class MemStorage implements IStorage {
 
   async deletePlayer(id: string): Promise<boolean> {
     return this.players.delete(id);
+  }
+
+  async getAllSessions(): Promise<Session[]> {
+    return Array.from(this.sessions.values()).sort((a, b) => b.date.getTime() - a.date.getTime());
+  }
+
+  async getSession(id: string): Promise<Session | undefined> {
+    return this.sessions.get(id);
+  }
+
+  async createSession(insertSession: InsertSession): Promise<Session> {
+    const id = randomUUID();
+    const session: Session = {
+      id,
+      name: insertSession.name,
+      date: insertSession.date,
+      sessionTypes: insertSession.sessionTypes,
+      courtsAvailable: insertSession.courtsAvailable,
+      maxSkillGap: insertSession.maxSkillGap ?? null,
+      minGamesPerPlayer: insertSession.minGamesPerPlayer ?? null,
+      status: insertSession.status,
+      createdAt: new Date(),
+    };
+    this.sessions.set(id, session);
+    return session;
+  }
+
+  async updateSession(id: string, updates: Partial<InsertSession>): Promise<Session | undefined> {
+    const session = this.sessions.get(id);
+    if (!session) return undefined;
+    
+    const updatedSession = { ...session, ...updates };
+    this.sessions.set(id, updatedSession);
+    return updatedSession;
+  }
+
+  async deleteSession(id: string): Promise<boolean> {
+    return this.sessions.delete(id);
   }
 }
 

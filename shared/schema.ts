@@ -43,7 +43,7 @@ export const sessions = pgTable("sessions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
   date: timestamp("date").notNull(),
-  sessionType: text("session_type").notNull(),
+  sessionTypes: text("session_types").array().notNull(),
   courtsAvailable: integer("courts_available").notNull(),
   maxSkillGap: integer("max_skill_gap"),
   minGamesPerPlayer: integer("min_games_per_player"),

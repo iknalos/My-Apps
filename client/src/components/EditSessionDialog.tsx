@@ -7,16 +7,14 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import type { InsertSession } from "@shared/schema";
+import type { Session, InsertSession } from "@shared/schema";
 
 const sessionTypeOptions = [
   "Singles",
@@ -26,47 +24,44 @@ const sessionTypeOptions = [
   "Open Play",
 ];
 
-export default function CreateSessionDialog() {
-  const [open, setOpen] = useState(false);
-  const [name, setName] = useState("");
-  const [date, setDate] = useState("");
-  const [courtsAvailable, setCourtsAvailable] = useState("");
-  const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
-  const [maxSkillGap, setMaxSkillGap] = useState("");
-  const [minGamesPerPlayer, setMinGamesPerPlayer] = useState("");
+interface EditSessionDialogProps {
+  session: Session;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export default function EditSessionDialog({ session, open, onOpenChange }: EditSessionDialogProps) {
+  const [name, setName] = useState(session.name);
+  const [date, setDate] = useState(
+    new Date(session.date).toISOString().slice(0, 16)
+  );
+  const [courtsAvailable, setCourtsAvailable] = useState(session.courtsAvailable.toString());
+  const [selectedTypes, setSelectedTypes] = useState<string[]>(session.sessionTypes);
+  const [maxSkillGap, setMaxSkillGap] = useState(session.maxSkillGap?.toString() || "");
+  const [minGamesPerPlayer, setMinGamesPerPlayer] = useState(session.minGamesPerPlayer?.toString() || "");
   const { toast } = useToast();
 
-  const createSessionMutation = useMutation({
-    mutationFn: async (session: InsertSession) => {
-      const response = await apiRequest("POST", "/api/sessions", session);
+  const updateSessionMutation = useMutation({
+    mutationFn: async (updates: Partial<InsertSession>) => {
+      const response = await apiRequest("PATCH", `/api/sessions/${session.id}`, updates);
       return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/sessions"] });
       toast({
         title: "Success",
-        description: "Session created successfully",
+        description: "Session updated successfully",
       });
-      setOpen(false);
-      resetForm();
+      onOpenChange(false);
     },
     onError: () => {
       toast({
         title: "Error",
-        description: "Failed to create session",
+        description: "Failed to update session",
         variant: "destructive",
       });
     },
   });
-
-  const resetForm = () => {
-    setName("");
-    setDate("");
-    setCourtsAvailable("");
-    setSelectedTypes([]);
-    setMaxSkillGap("");
-    setMinGamesPerPlayer("");
-  };
 
   const handleTypeToggle = (type: string) => {
     setSelectedTypes((prev) =>
@@ -77,71 +72,65 @@ export default function CreateSessionDialog() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const sessionData: InsertSession = {
+    const updates: Partial<InsertSession> = {
       name,
       date: new Date(date),
       sessionTypes: selectedTypes,
       courtsAvailable: parseInt(courtsAvailable),
       maxSkillGap: maxSkillGap ? parseInt(maxSkillGap) : null,
       minGamesPerPlayer: minGamesPerPlayer ? parseInt(minGamesPerPlayer) : null,
-      status: "upcoming",
+      status: session.status,
     };
 
-    createSessionMutation.mutate(sessionData);
+    updateSessionMutation.mutate(updates);
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button data-testid="button-create-session">
-          <Plus className="h-4 w-4 mr-2" />
-          Create Session
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[550px]">
         <DialogHeader>
-          <DialogTitle>Create New Session</DialogTitle>
+          <DialogTitle>Edit Session</DialogTitle>
           <DialogDescription>
-            Set up a new badminton session with multiple session types.
+            Update session information and settings
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="session-name">Session Name</Label>
+              <Label htmlFor="edit-session-name">Session Name</Label>
               <Input
-                id="session-name"
+                id="edit-session-name"
                 placeholder="e.g. Friday Night Badminton"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
-                data-testid="input-session-name"
+                data-testid="input-edit-session-name"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="date">Date & Time</Label>
+                <Label htmlFor="edit-date">Date & Time</Label>
                 <Input
-                  id="date"
+                  id="edit-date"
                   type="datetime-local"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
                   required
-                  data-testid="input-session-date"
+                  data-testid="input-edit-session-date"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="courts">Courts Available</Label>
+                <Label htmlFor="edit-courts">Courts Available</Label>
                 <Input
-                  id="courts"
+                  id="edit-courts"
                   type="number"
                   placeholder="4"
                   min="1"
                   value={courtsAvailable}
                   onChange={(e) => setCourtsAvailable(e.target.value)}
                   required
-                  data-testid="input-courts"
+                  data-testid="input-edit-courts"
                 />
               </div>
             </div>
@@ -155,13 +144,13 @@ export default function CreateSessionDialog() {
                 {sessionTypeOptions.map((type) => (
                   <div key={type} className="flex items-center space-x-2">
                     <Checkbox
-                      id={type}
+                      id={`edit-${type}`}
                       checked={selectedTypes.includes(type)}
                       onCheckedChange={() => handleTypeToggle(type)}
-                      data-testid={`checkbox-${type.toLowerCase().replace(/\s+/g, "-")}`}
+                      data-testid={`checkbox-edit-${type.toLowerCase().replace(/\s+/g, "-")}`}
                     />
                     <Label
-                      htmlFor={type}
+                      htmlFor={`edit-${type}`}
                       className="text-sm font-normal cursor-pointer"
                     >
                       {type}
@@ -173,39 +162,39 @@ export default function CreateSessionDialog() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="max-skill-gap">Max Skill Gap (Optional)</Label>
+                <Label htmlFor="edit-max-skill-gap">Max Skill Gap (Optional)</Label>
                 <Input
-                  id="max-skill-gap"
+                  id="edit-max-skill-gap"
                   type="number"
                   placeholder="200"
                   value={maxSkillGap}
                   onChange={(e) => setMaxSkillGap(e.target.value)}
-                  data-testid="input-max-skill-gap"
+                  data-testid="input-edit-max-skill-gap"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="min-games">Min Games/Player (Optional)</Label>
+                <Label htmlFor="edit-min-games">Min Games/Player (Optional)</Label>
                 <Input
-                  id="min-games"
+                  id="edit-min-games"
                   type="number"
                   placeholder="3"
                   value={minGamesPerPlayer}
                   onChange={(e) => setMinGamesPerPlayer(e.target.value)}
-                  data-testid="input-min-games"
+                  data-testid="input-edit-min-games"
                 />
               </div>
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
             <Button
               type="submit"
-              disabled={!name || !date || !courtsAvailable || selectedTypes.length === 0 || createSessionMutation.isPending}
-              data-testid="button-submit-session"
+              disabled={!name || !date || !courtsAvailable || selectedTypes.length === 0 || updateSessionMutation.isPending}
+              data-testid="button-save-session"
             >
-              {createSessionMutation.isPending ? "Creating..." : "Create Session"}
+              {updateSessionMutation.isPending ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>
         </form>
