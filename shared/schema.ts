@@ -44,6 +44,7 @@ export const sessions = pgTable("sessions", {
   name: text("name").notNull(),
   date: timestamp("date").notNull(),
   sessionTypes: text("session_types").array().notNull(),
+  capacity: integer("capacity").notNull(),
   courtsAvailable: integer("courts_available").notNull(),
   maxSkillGap: integer("max_skill_gap"),
   minGamesPerPlayer: integer("min_games_per_player"),
@@ -58,6 +59,22 @@ export const insertSessionSchema = createInsertSchema(sessions).omit({
 
 export type InsertSession = z.infer<typeof insertSessionSchema>;
 export type Session = typeof sessions.$inferSelect;
+
+export const registrations = pgTable("registrations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  sessionId: varchar("session_id").notNull(),
+  playerId: varchar("player_id").notNull(),
+  selectedEvents: text("selected_events").array().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertRegistrationSchema = createInsertSchema(registrations).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertRegistration = z.infer<typeof insertRegistrationSchema>;
+export type Registration = typeof registrations.$inferSelect;
 
 export const matches = pgTable("matches", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
