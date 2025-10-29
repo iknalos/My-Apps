@@ -21,12 +21,24 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { UserPlus } from "lucide-react";
+import SkillAssessment from "./SkillAssessment";
 
 const categories = ["Singles", "Men's Doubles", "Women's Doubles", "Mixed Doubles"];
 
+interface CategoryRatings {
+  singlesRating: number | null;
+  mensDoublesRating: number | null;
+  womensDoublesRating: number | null;
+  mixedDoublesRating: number | null;
+}
+
 export default function CreatePlayerDialog() {
   const [open, setOpen] = useState(false);
+  const [step, setStep] = useState<"basic" | "assessment">("basic");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [name, setName] = useState("");
+  const [gender, setGender] = useState("");
+  const [notes, setNotes] = useState("");
 
   const handleCategoryToggle = (category: string) => {
     setSelectedCategories((prev) =>
@@ -36,10 +48,31 @@ export default function CreatePlayerDialog() {
     );
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleBasicSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Create player submitted");
+    if (name && gender && selectedCategories.length > 0) {
+      setStep("assessment");
+    }
+  };
+
+  const handleAssessmentComplete = (ratings: CategoryRatings) => {
+    console.log("Player created:", {
+      name,
+      gender,
+      preferredCategories: selectedCategories,
+      notes,
+      ...ratings,
+    });
     setOpen(false);
+    setStep("basic");
+    setName("");
+    setGender("");
+    setSelectedCategories([]);
+    setNotes("");
+  };
+
+  const handleBack = () => {
+    setStep("basic");
   };
 
   return (
@@ -50,91 +83,119 @@ export default function CreatePlayerDialog() {
           Add Player
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>Add New Player</DialogTitle>
-          <DialogDescription>
-            Create a new player profile with their details and preferences.
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
-              <Input
-                id="name"
-                placeholder="Enter player name"
-                data-testid="input-player-name"
-              />
-            </div>
+      <DialogContent className="sm:max-w-[600px]">
+        {step === "basic" ? (
+          <>
+            <DialogHeader>
+              <DialogTitle>Add New Player</DialogTitle>
+              <DialogDescription>
+                Enter basic player information. You'll assess skill levels next.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleBasicSubmit}>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Name</Label>
+                  <Input
+                    id="name"
+                    placeholder="Enter player name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                    data-testid="input-player-name"
+                  />
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="gender">Gender</Label>
-              <Select>
-                <SelectTrigger id="gender" data-testid="select-gender">
-                  <SelectValue placeholder="Select gender" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Male">Male</SelectItem>
-                  <SelectItem value="Female">Female</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+                <div className="space-y-2">
+                  <Label htmlFor="gender">Gender</Label>
+                  <Select value={gender} onValueChange={setGender} required>
+                    <SelectTrigger id="gender" data-testid="select-gender">
+                      <SelectValue placeholder="Select gender" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Male">Male</SelectItem>
+                      <SelectItem value="Female">Female</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="skillRating">Skill Rating</Label>
-              <Input
-                id="skillRating"
-                type="number"
-                placeholder="e.g. 1500"
-                data-testid="input-skill-rating"
-              />
-            </div>
+                <div className="space-y-2">
+                  <Label>Preferred Categories</Label>
+                  <div className="space-y-2">
+                    {categories.map((category) => {
+                      const shouldDisable =
+                        (category === "Men's Doubles" && gender === "Female") ||
+                        (category === "Women's Doubles" && gender === "Male");
 
-            <div className="space-y-2">
-              <Label>Preferred Categories</Label>
-              <div className="space-y-2">
-                {categories.map((category) => (
-                  <div key={category} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={category}
-                      checked={selectedCategories.includes(category)}
-                      onCheckedChange={() => handleCategoryToggle(category)}
-                      data-testid={`checkbox-${category.toLowerCase().replace(/\s+/g, '-')}`}
-                    />
-                    <Label
-                      htmlFor={category}
-                      className="text-sm font-normal cursor-pointer"
-                    >
-                      {category}
-                    </Label>
+                      return (
+                        <div key={category} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={category}
+                            checked={selectedCategories.includes(category)}
+                            onCheckedChange={() => handleCategoryToggle(category)}
+                            disabled={shouldDisable}
+                            data-testid={`checkbox-${category.toLowerCase().replace(/\s+/g, "-")}`}
+                          />
+                          <Label
+                            htmlFor={category}
+                            className={`text-sm font-normal cursor-pointer ${
+                              shouldDisable ? "text-muted-foreground" : ""
+                            }`}
+                          >
+                            {category}
+                          </Label>
+                        </div>
+                      );
+                    })}
                   </div>
-                ))}
-              </div>
-            </div>
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="notes">Notes (Optional)</Label>
-              <Textarea
-                id="notes"
-                placeholder="Any special notes or constraints"
-                data-testid="input-notes"
+                <div className="space-y-2">
+                  <Label htmlFor="notes">Notes (Optional)</Label>
+                  <Textarea
+                    id="notes"
+                    placeholder="Any special notes or constraints"
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    data-testid="input-notes"
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={!name || !gender || selectedCategories.length === 0}
+                  data-testid="button-next-assessment"
+                >
+                  Next: Skill Assessment
+                </Button>
+              </DialogFooter>
+            </form>
+          </>
+        ) : (
+          <>
+            <DialogHeader>
+              <DialogTitle>Skill Assessment for {name}</DialogTitle>
+              <DialogDescription>
+                Answer questions to determine skill ratings for each category
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+              <SkillAssessment
+                gender={gender}
+                onComplete={handleAssessmentComplete}
+                onBack={handleBack}
               />
             </div>
-          </div>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" data-testid="button-submit-player">
-              Create Player
-            </Button>
-          </DialogFooter>
-        </form>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );

@@ -12,43 +12,55 @@ export default function Players() {
       id: "1",
       name: "Sarah Johnson",
       gender: "Female",
-      skillRating: 1450,
-      preferredCategories: ["Mixed Doubles", "Women's Doubles"],
+      singlesRating: 1450,
+      womensDoublesRating: 1620,
+      mixedDoublesRating: 1580,
+      preferredCategories: ["Singles", "Women's Doubles", "Mixed Doubles"],
     },
     {
       id: "2",
       name: "Mike Chen",
       gender: "Male",
-      skillRating: 1620,
-      preferredCategories: ["Mixed Doubles", "Men's Doubles"],
+      singlesRating: 1380,
+      mensDoublesRating: 1720,
+      mixedDoublesRating: 1650,
+      preferredCategories: ["Men's Doubles", "Mixed Doubles"],
     },
     {
       id: "3",
       name: "Emma Davis",
       gender: "Female",
-      skillRating: 1380,
+      singlesRating: 1320,
+      womensDoublesRating: 1380,
+      mixedDoublesRating: 1420,
       preferredCategories: ["Singles", "Women's Doubles", "Mixed Doubles"],
     },
     {
       id: "4",
       name: "Tom Wilson",
       gender: "Male",
-      skillRating: 1550,
+      singlesRating: null,
+      mensDoublesRating: 1550,
+      mixedDoublesRating: 1490,
       preferredCategories: ["Men's Doubles", "Mixed Doubles"],
     },
     {
       id: "5",
       name: "Lisa Park",
       gender: "Female",
-      skillRating: 1720,
+      singlesRating: 1720,
+      womensDoublesRating: 1650,
+      mixedDoublesRating: null,
       preferredCategories: ["Singles", "Women's Doubles"],
     },
     {
       id: "6",
       name: "David Lee",
       gender: "Male",
-      skillRating: 1490,
-      preferredCategories: ["Singles", "Men's Doubles"],
+      singlesRating: 1490,
+      mensDoublesRating: 1520,
+      mixedDoublesRating: 1470,
+      preferredCategories: ["Singles", "Men's Doubles", "Mixed Doubles"],
     },
   ];
 
@@ -62,7 +74,7 @@ export default function Players() {
         <div>
           <h1 className="text-3xl font-bold">Players</h1>
           <p className="text-muted-foreground">
-            Manage player profiles and skill ratings
+            Manage player profiles and category-specific skill ratings
           </p>
         </div>
         <CreatePlayerDialog />

@@ -2,13 +2,16 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { User, Edit } from "lucide-react";
+import { Edit } from "lucide-react";
 
 interface PlayerCardProps {
   id: string;
   name: string;
   gender: string;
-  skillRating: number;
+  singlesRating?: number | null;
+  mensDoublesRating?: number | null;
+  womensDoublesRating?: number | null;
+  mixedDoublesRating?: number | null;
   preferredCategories: string[];
   onEdit?: () => void;
 }
@@ -16,7 +19,10 @@ interface PlayerCardProps {
 export default function PlayerCard({
   name,
   gender,
-  skillRating,
+  singlesRating,
+  mensDoublesRating,
+  womensDoublesRating,
+  mixedDoublesRating,
   preferredCategories,
   onEdit,
 }: PlayerCardProps) {
@@ -48,12 +54,45 @@ export default function PlayerCard({
                 <Edit className="h-4 w-4" />
               </Button>
             </div>
-            <div className="flex flex-wrap gap-2 mb-2">
+            <div className="flex flex-wrap gap-2 mb-3">
               <Badge className={genderColor}>{gender}</Badge>
-              <Badge variant="secondary" className="font-mono">
-                Rating: {skillRating}
-              </Badge>
             </div>
+            
+            <div className="space-y-1 mb-3">
+              {singlesRating && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Singles:</span>
+                  <Badge variant="secondary" className="font-mono text-xs">
+                    {singlesRating}
+                  </Badge>
+                </div>
+              )}
+              {mensDoublesRating && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Men's Doubles:</span>
+                  <Badge variant="secondary" className="font-mono text-xs">
+                    {mensDoublesRating}
+                  </Badge>
+                </div>
+              )}
+              {womensDoublesRating && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Women's Doubles:</span>
+                  <Badge variant="secondary" className="font-mono text-xs">
+                    {womensDoublesRating}
+                  </Badge>
+                </div>
+              )}
+              {mixedDoublesRating && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Mixed Doubles:</span>
+                  <Badge variant="secondary" className="font-mono text-xs">
+                    {mixedDoublesRating}
+                  </Badge>
+                </div>
+              )}
+            </div>
+
             <div className="flex flex-wrap gap-1">
               {preferredCategories.map((category) => (
                 <Badge
