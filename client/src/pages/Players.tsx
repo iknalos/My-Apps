@@ -4,10 +4,12 @@ import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import PlayerCard from "@/components/PlayerCard";
 import CreatePlayerDialog from "@/components/CreatePlayerDialog";
+import EditPlayerDialog from "@/components/EditPlayerDialog";
 import type { Player } from "@shared/schema";
 
 export default function Players() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
 
   const { data: players = [], isLoading } = useQuery<Player[]>({
     queryKey: ["/api/players"],
@@ -52,7 +54,7 @@ export default function Players() {
               <PlayerCard
                 key={player.id}
                 {...player}
-                onEdit={() => console.log("Edit player:", player.id)}
+                onEdit={() => setEditingPlayer(player)}
               />
             ))}
           </div>
@@ -67,6 +69,14 @@ export default function Players() {
             </div>
           )}
         </>
+      )}
+
+      {editingPlayer && (
+        <EditPlayerDialog
+          player={editingPlayer}
+          open={!!editingPlayer}
+          onOpenChange={(open) => !open && setEditingPlayer(null)}
+        />
       )}
     </div>
   );
