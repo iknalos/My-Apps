@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
@@ -15,6 +16,7 @@ import EditSessionDialog from "@/components/EditSessionDialog";
 import type { Session } from "@shared/schema";
 
 export default function Sessions() {
+  const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [editingSession, setEditingSession] = useState<Session | null>(null);
@@ -83,7 +85,7 @@ export default function Sessions() {
             <SessionCard
               key={session.id}
               session={session}
-              onViewDetails={() => console.log("View session:", session.id)}
+              onViewDetails={() => setLocation(`/sessions/${session.id}`)}
               onEdit={() => setEditingSession(session)}
             />
           ))}

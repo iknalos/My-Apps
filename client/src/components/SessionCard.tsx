@@ -1,4 +1,5 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +22,7 @@ export default function SessionCard({
   onEdit,
 }: SessionCardProps) {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   
   const { data: registrations = [] } = useQuery<Registration[]>({
     queryKey: ["/api/sessions", session.id, "registrations"],
@@ -37,6 +39,8 @@ export default function SessionCard({
         title: "Success",
         description: `Generated ${data.matchCount} matches across ${session.numberOfRounds} rounds`,
       });
+      // Navigate to session detail page to view draws
+      setLocation(`/sessions/${session.id}`);
     },
     onError: () => {
       toast({
