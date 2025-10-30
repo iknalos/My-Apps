@@ -5,12 +5,15 @@
 BadmintonPro is a web application for managing badminton sessions and player pairings. It focuses on creating balanced matches across multiple game types (Singles, Men's Doubles, Women's Doubles, Mixed Doubles), with intelligent skill-based pairing algorithms. The application helps club organizers manage sessions, track player registrations, and ensure fair, inclusive play for all skill levels.
 
 **Core Features:**
-- Player management with category-specific skill ratings
+- Player management with category-specific skill ratings (1000-2000 scale)
 - Session creation and management with configurable capacity limits (8, 10, 12, 14, 16, 20 players)
-- Player registration system with event selection
+- Player registration system with gender-aware event selection
 - Capacity tracking and session status management
+- Automated draw generation with configurable number of rounds
+- Round-robin rotation for opponent variety across rounds
+- Skill-based match balancing via partnership formation
+- Bye rotation for odd participant counts
 - Gender-aware pairing for mixed doubles
-- Skill-based match balancing
 - Real-time session tracking and score entry
 
 ## User Preferences
@@ -56,19 +59,29 @@ Preferred communication style: Simple, everyday language.
 - Optional notes field
 
 **Sessions:**
-- Basic info (name, date, capacity)
-- Configuration (courts available, session types, skill gap constraints)
+- Basic info (name, date, capacity, number of rounds)
+- Configuration (courts available, session types)
 - Fixed capacity options: 8, 10, 12, 14, 16, or 20 players
-- Pairing constraints (max skill gap, min games per player)
+- Configurable number of rounds (1-10)
 - Status tracking (upcoming, active, completed)
+- Draw generation on-demand via "Create Draws" button
 
 **Registrations:**
 - Links players to sessions
 - Tracks selected event types per player (from session's available types)
+- Gender-aware event filtering (Men's Doubles disabled for females, Women's Doubles for males)
 - Real-time capacity tracking (shows X/Y players registered)
 - Prevents duplicate registrations
 - Enforces session capacity limits
 - Session marked as "full" when capacity reached
+
+**Matches (Draw Generation):**
+- Auto-generated from registrations via draw generation algorithm
+- Round-robin rotation ensures different opponents each round
+- Bye rotation for odd participant counts (singles or partnerships)
+- Court assignment based on session configuration
+- Score tracking per match (team1Score, team2Score)
+- Match status (scheduled, in-progress, completed)
 
 ### Key Architectural Decisions
 
@@ -113,6 +126,29 @@ Preferred communication style: Simple, everyday language.
 - localStorage persistence for theme preference
 - Semantic color tokens (primary, secondary, destructive, etc.)
 
+**Draw Generation Algorithm:**
+- **Singles Pairing:**
+  - Players sorted by singles rating (descending: 2000 → 1000)
+  - Round-robin rotation using circle method (fix first player, rotate others)
+  - Bye rotation for odd counts: `byeIndex = (round - 1) % playerCount`
+  - Each round produces different opponent pairings for variety
+  
+- **Doubles/Mixed Pairing:**
+  - **Partnership Formation (once at start):**
+    - Men's/Women's Doubles: Snake draft pairs high+low ratings for balance
+    - Mixed Doubles: Males paired with females of similar relative skill rank
+    - Partnerships sorted by total rating (sum of both players)
+  - **Round-Robin Matching:**
+    - Circle method applied to partnerships (fix first, rotate others)
+    - Adjacent partnerships matched after rotation for reasonable balance
+    - Bye rotation for odd partnership counts: `byeIndex = (round - 1) % partnershipCount`
+    - Partnerships remain stable across all rounds
+    
+- **Court Assignment:**
+  - Matches distributed across available courts
+  - Round-robin within each round for fair court usage
+  - Sequential court numbering (1, 2, 3, ...)
+
 ### API Structure
 
 RESTful endpoints follow convention:
@@ -129,6 +165,8 @@ RESTful endpoints follow convention:
 - `GET /api/sessions/:sessionId/registrations` - List registrations for a session
 - `POST /api/sessions/:sessionId/registrations` - Register player for session
 - `DELETE /api/registrations/:id` - Remove registration
+- `POST /api/sessions/:sessionId/draws` - Generate match draws for a session
+- `GET /api/sessions/:sessionId/draws` - Get generated draws for a session
 
 **Request/Response Flow:**
 1. Client validates input with Zod schema
