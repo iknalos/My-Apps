@@ -93,8 +93,64 @@ export default function SessionDetail() {
     return player?.name || "Unknown";
   };
 
+  // Helper function to get player rating based on event type
+  const getPlayerRating = (playerId: string | null, eventType: string): number => {
+    if (!playerId) return 1500; // Default rating
+    const player = players.find(p => p.id === playerId);
+    if (!player) return 1500;
+    
+    switch (eventType) {
+      case "singles":
+        return player.singlesRating || 1500;
+      case "mensDoubles":
+        return player.mensDoublesRating || 1500;
+      case "womensDoubles":
+        return player.womensDoublesRating || 1500;
+      case "mixedDoubles":
+        return player.mixedDoublesRating || 1500;
+      default:
+        return 1500;
+    }
+  };
+
+  // Calculate handicap based on rating difference
+  const calculateHandicap = (team1Rating: number, team2Rating: number): string | null => {
+    const diff = Math.abs(team1Rating - team2Rating);
+    
+    if (diff < 100) {
+      return null; // No handicap needed for close matches
+    }
+    
+    const higherTeam = team1Rating > team2Rating ? "Team 1" : "Team 2";
+    const lowerTeam = team1Rating > team2Rating ? "Team 2" : "Team 1";
+    
+    // Calculate required extra points for stronger team
+    // For every 100 rating points difference, stronger team needs +2 points to win
+    const extraPoints = Math.floor(diff / 100) * 2;
+    
+    return `Handicap: ${higherTeam} must win by ${extraPoints}+ points per set`;
+  };
+
   // Convert API matches to MatchCard format
   const formatMatchForCard = (match: Match) => {
+    // Get player ratings based on event type
+    const team1Player1Rating = getPlayerRating(match.team1Player1Id, match.eventType);
+    const team1Player2Rating = match.team1Player2Id ? getPlayerRating(match.team1Player2Id, match.eventType) : 0;
+    const team2Player1Rating = getPlayerRating(match.team2Player1Id, match.eventType);
+    const team2Player2Rating = match.team2Player2Id ? getPlayerRating(match.team2Player2Id, match.eventType) : 0;
+    
+    // Calculate team ratings (average for doubles, direct for singles)
+    const team1Rating = match.team1Player2Id 
+      ? Math.round((team1Player1Rating + team1Player2Rating) / 2)
+      : team1Player1Rating;
+    const team2Rating = match.team2Player2Id
+      ? Math.round((team2Player1Rating + team2Player2Rating) / 2)
+      : team2Player1Rating;
+    
+    // Calculate skill balance and handicap
+    const skillBalance = team1Rating - team2Rating;
+    const handicapInfo = calculateHandicap(team1Rating, team2Rating);
+    
     // Calculate total sets won for each team
     const team1SetsWon = [match.team1Set1, match.team1Set2, match.team1Set3].filter((s, i) => {
       const team2Set = [match.team2Set1, match.team2Set2, match.team2Set3][i];
@@ -137,6 +193,8 @@ export default function SessionDetail() {
       team1: {
         player1: getPlayerName(match.team1Player1Id),
         player2: match.team1Player2Id ? getPlayerName(match.team1Player2Id) : undefined,
+        player1Rating: team1Player1Rating,
+        player2Rating: team1Player2Rating > 0 ? team1Player2Rating : undefined,
         score: isMatchScored ? team1SetsWon : undefined,
         isWinner: team1IsWinner,
         setScores: setScores,
@@ -144,12 +202,15 @@ export default function SessionDetail() {
       team2: {
         player1: getPlayerName(match.team2Player1Id),
         player2: match.team2Player2Id ? getPlayerName(match.team2Player2Id) : undefined,
+        player1Rating: team2Player1Rating,
+        player2Rating: team2Player2Rating > 0 ? team2Player2Rating : undefined,
         score: isMatchScored ? team2SetsWon : undefined,
         isWinner: team2IsWinner,
         setScores: setScores,
       },
       status: match.status as "scheduled" | "in-progress" | "completed",
-      skillBalance: 0, // Can calculate this if needed
+      skillBalance,
+      handicapInfo: handicapInfo || undefined,
       team1Player1Id: match.team1Player1Id,
       team1Player2Id: match.team1Player2Id,
       team2Player1Id: match.team2Player1Id,

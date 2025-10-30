@@ -6,6 +6,8 @@ import { Trophy } from "lucide-react";
 interface Team {
   player1: string;
   player2?: string;
+  player1Rating?: number;
+  player2Rating?: number;
   score?: number;
   isWinner?: boolean;
   setScores?: string; // e.g., "21-19, 21-18"
@@ -19,6 +21,7 @@ interface MatchCardProps {
   team2: Team;
   status: "scheduled" | "in-progress" | "completed";
   skillBalance?: number;
+  handicapInfo?: string;
   onEnterScore?: () => void;
 }
 
@@ -30,6 +33,7 @@ export default function MatchCard({
   team2,
   status,
   skillBalance = 0,
+  handicapInfo,
   onEnterScore,
 }: MatchCardProps) {
   const statusColors = {
@@ -77,12 +81,18 @@ export default function MatchCard({
         <div className="space-y-2">
           <div className={`flex items-center justify-between p-3 rounded-md ${team1.isWinner ? "bg-green-100 dark:bg-green-900/30" : "bg-muted/50"}`}>
             <div className="flex-1">
-              <div className="font-medium">
-                {team1.player1}
+              <div className="flex items-center gap-2">
+                <span className="font-medium">{team1.player1}</span>
+                {team1.player1Rating && (
+                  <span className="text-xs font-mono text-muted-foreground">({team1.player1Rating})</span>
+                )}
               </div>
               {team1.player2 && (
-                <div className="text-sm text-muted-foreground">
-                  {team1.player2}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">{team1.player2}</span>
+                  {team1.player2Rating && (
+                    <span className="text-xs font-mono text-muted-foreground">({team1.player2Rating})</span>
+                  )}
                 </div>
               )}
               {status === "completed" && team1.setScores && (
@@ -102,12 +112,18 @@ export default function MatchCard({
 
           <div className={`flex items-center justify-between p-3 rounded-md ${team2.isWinner ? "bg-green-100 dark:bg-green-900/30" : "bg-muted/50"}`}>
             <div className="flex-1">
-              <div className="font-medium">
-                {team2.player1}
+              <div className="flex items-center gap-2">
+                <span className="font-medium">{team2.player1}</span>
+                {team2.player1Rating && (
+                  <span className="text-xs font-mono text-muted-foreground">({team2.player1Rating})</span>
+                )}
               </div>
               {team2.player2 && (
-                <div className="text-sm text-muted-foreground">
-                  {team2.player2}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">{team2.player2}</span>
+                  {team2.player2Rating && (
+                    <span className="text-xs font-mono text-muted-foreground">({team2.player2Rating})</span>
+                  )}
                 </div>
               )}
               {status === "completed" && team2.setScores && (
@@ -124,12 +140,19 @@ export default function MatchCard({
           </div>
         </div>
 
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Balance:</span>
-          <span className={`font-mono font-medium ${balanceColor}`}>
-            {skillBalance > 0 ? "+" : ""}
-            {skillBalance}
-          </span>
+        <div className="space-y-1">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">Balance:</span>
+            <span className={`font-mono font-medium ${balanceColor}`}>
+              {skillBalance > 0 ? "+" : ""}
+              {skillBalance}
+            </span>
+          </div>
+          {handicapInfo && (
+            <div className="text-xs text-center text-amber-600 dark:text-amber-400 font-medium">
+              {handicapInfo}
+            </div>
+          )}
         </div>
 
         {onEnterScore && (
