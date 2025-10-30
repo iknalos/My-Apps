@@ -9,6 +9,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 
 const menuItems = [
@@ -41,6 +42,12 @@ const menuItems = [
 
 export default function AppSidebar() {
   const [location] = useLocation();
+  const { setOpenMobile } = useSidebar();
+
+  const handleNavClick = () => {
+    // Close sidebar on mobile when a nav item is clicked
+    setOpenMobile(false);
+  };
 
   return (
     <Sidebar>
@@ -52,7 +59,11 @@ export default function AppSidebar() {
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild isActive={location === item.url}>
-                    <Link href={item.url} data-testid={`link-${item.title.toLowerCase()}`}>
+                    <Link 
+                      href={item.url} 
+                      data-testid={`link-${item.title.toLowerCase()}`}
+                      onClick={handleNavClick}
+                    >
                       <item.icon />
                       <span>{item.title}</span>
                     </Link>
