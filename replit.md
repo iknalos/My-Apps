@@ -41,7 +41,7 @@ Preferred communication style: Simple, everyday language.
 **Database:**
 - Drizzle ORM configured for PostgreSQL
 - Schema-first approach with Zod validation
-- Tables: users, players, sessions, registrations
+- Tables: users, players, sessions, registrations, matches, ratingHistories
 - UUID primary keys with auto-generation
 
 **Design System:**
@@ -80,8 +80,20 @@ Preferred communication style: Simple, everyday language.
 - Round-robin rotation ensures different opponents each round
 - Bye rotation for odd participant counts (singles or partnerships)
 - Court assignment based on session configuration
-- Score tracking per match (team1Score, team2Score)
+- Score tracking per match (team1Set1, team1Set2, team1Set3, team2Set1, team2Set2, team2Set3)
+- Best-of-3 scoring with badminton rules (21 points with 2-point lead, or first to 30)
 - Match status (scheduled, in-progress, completed)
+- Automated rating updates triggered when scores are entered/modified
+
+**Rating System (ELO-based):**
+- Dynamic rating adjustments based on match outcomes
+- Event-type specific ratings (Singles, Men's/Women's/Mixed Doubles)
+- Expected win probability calculation using standard ELO formula
+- Variable K-factors: 40 (<1500), 32 (1500-1800), 24 (>1800)
+- Ratings clamped between 1000-2000
+- Underdogs gain more points for wins; favorites lose more for losses
+- Idempotent: editing scores recalculates ratings correctly (no double-counting)
+- Full rating history tracking with match references
 
 ### Key Architectural Decisions
 
@@ -169,6 +181,8 @@ Preferred communication style: Simple, everyday language.
 RESTful endpoints follow convention:
 - `GET /api/players` - List all players
 - `GET /api/players/:id` - Get single player
+- `GET /api/players/:id/rating-history` - Get rating history for a player
+- `GET /api/players/:id/matches` - Get match history for a player
 - `POST /api/players` - Create player
 - `PATCH /api/players/:id` - Update player
 - `DELETE /api/players/:id` - Delete player
@@ -181,7 +195,8 @@ RESTful endpoints follow convention:
 - `POST /api/sessions/:sessionId/registrations` - Register player for session
 - `DELETE /api/registrations/:id` - Remove registration
 - `POST /api/sessions/:sessionId/draws` - Generate match draws for a session
-- `GET /api/sessions/:sessionId/draws` - Get generated draws for a session
+- `GET /api/sessions/:sessionId/matches` - Get generated draws for a session
+- `PATCH /api/matches/:id` - Update match scores (triggers automatic rating updates)
 
 **Request/Response Flow:**
 1. Client validates input with Zod schema

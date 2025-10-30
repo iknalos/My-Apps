@@ -32,7 +32,9 @@ export interface IStorage {
   deleteMatchesBySession(sessionId: string): Promise<number>;
 
   getRatingHistoriesByPlayer(playerId: string): Promise<RatingHistory[]>;
+  getRatingHistoriesByMatch(matchId: string): Promise<RatingHistory[]>;
   createRatingHistory(ratingHistory: InsertRatingHistory): Promise<RatingHistory>;
+  deleteRatingHistoriesByMatch(matchId: string): Promise<number>;
 }
 
 export class MemStorage implements IStorage {
@@ -242,6 +244,11 @@ export class MemStorage implements IStorage {
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }
 
+  async getRatingHistoriesByMatch(matchId: string): Promise<RatingHistory[]> {
+    return Array.from(this.ratingHistories.values())
+      .filter(h => h.matchId === matchId);
+  }
+
   async createRatingHistory(insertRatingHistory: InsertRatingHistory): Promise<RatingHistory> {
     const id = randomUUID();
     const ratingHistory: RatingHistory = {
@@ -259,6 +266,14 @@ export class MemStorage implements IStorage {
     };
     this.ratingHistories.set(id, ratingHistory);
     return ratingHistory;
+  }
+
+  async deleteRatingHistoriesByMatch(matchId: string): Promise<number> {
+    const historiesToDelete = Array.from(this.ratingHistories.values()).filter(h => h.matchId === matchId);
+    for (const history of historiesToDelete) {
+      this.ratingHistories.delete(history.id);
+    }
+    return historiesToDelete.length;
   }
 }
 
@@ -388,9 +403,19 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(ratingHistories.createdAt));
   }
 
+  async getRatingHistoriesByMatch(matchId: string): Promise<RatingHistory[]> {
+    return await db.select().from(ratingHistories)
+      .where(eq(ratingHistories.matchId, matchId));
+  }
+
   async createRatingHistory(insertRatingHistory: InsertRatingHistory): Promise<RatingHistory> {
     const [ratingHistory] = await db.insert(ratingHistories).values(insertRatingHistory).returning();
     return ratingHistory;
+  }
+
+  async deleteRatingHistoriesByMatch(matchId: string): Promise<number> {
+    const deleted = await db.delete(ratingHistories).where(eq(ratingHistories.matchId, matchId)).returning();
+    return deleted.length;
   }
 }
 

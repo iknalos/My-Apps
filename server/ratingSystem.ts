@@ -218,13 +218,40 @@ export async function calculateMatchRatingChanges(match: Match): Promise<RatingU
 }
 
 /**
+ * Rollback previous rating changes for a match
+ * This allows us to recalculate ratings when scores are edited
+ */
+async function rollbackMatchRatings(matchId: string): Promise<void> {
+  // Get all rating histories for this match
+  const matchHistories = await storage.getRatingHistoriesByMatch(matchId);
+  
+  // Restore old ratings for all affected players
+  for (const history of matchHistories) {
+    await updatePlayerRating(history.playerId, history.eventType, history.oldRating);
+  }
+  
+  // Delete the old history entries
+  await storage.deleteRatingHistoriesByMatch(matchId);
+}
+
+/**
  * Apply rating changes after a match is completed
  * This is the main function to call when match scores are entered
+ * IDEMPOTENT: Can be called multiple times for the same match (e.g., when scores are edited)
  */
 export async function applyMatchRatingChanges(matchId: string): Promise<void> {
   const match = await storage.updateMatch(matchId, { status: "completed" });
   if (!match) {
     throw new Error("Match not found");
+  }
+  
+  // Check if rating changes already exist for this match
+  const existingHistories = await storage.getRatingHistoriesByMatch(matchId);
+  
+  // If histories exist, roll back the previous rating changes first
+  // This ensures idempotency - editing scores multiple times produces the same result
+  if (existingHistories.length > 0) {
+    await rollbackMatchRatings(matchId);
   }
   
   const ratingUpdates = await calculateMatchRatingChanges(match);
