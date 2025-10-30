@@ -254,6 +254,7 @@ export default function SkillAssessment({ gender, preferredCategories, onComplet
           <Button
             variant="outline"
             onClick={handlePrevious}
+            disabled={isLoading}
             data-testid="button-previous"
           >
             <ChevronLeft className="h-4 w-4 mr-2" />
@@ -261,10 +262,10 @@ export default function SkillAssessment({ gender, preferredCategories, onComplet
           </Button>
           <Button
             onClick={handleNext}
-            disabled={!canProceed}
+            disabled={!canProceed || isLoading}
             data-testid="button-next"
           >
-            {isLastQuestion
+            {isLoading ? "Creating Profile..." : isLastQuestion
               ? "Complete Assessment"
               : currentQuestionIndex === questions.length - 1
               ? "Next Category"

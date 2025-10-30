@@ -37,6 +37,7 @@ export const players = pgTable("players", {
 export const insertPlayerSchema = createInsertSchema(players).omit({
   id: true,
   createdAt: true,
+  userId: true,
 });
 
 export type InsertPlayer = z.infer<typeof insertPlayerSchema>;
