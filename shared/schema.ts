@@ -46,6 +46,7 @@ export const sessions = pgTable("sessions", {
   sessionTypes: text("session_types").array().notNull(),
   capacity: integer("capacity").notNull(),
   courtsAvailable: integer("courts_available").notNull(),
+  numberOfRounds: integer("number_of_rounds").notNull(),
   maxSkillGap: integer("max_skill_gap"),
   minGamesPerPlayer: integer("min_games_per_player"),
   status: text("status").notNull(),
