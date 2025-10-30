@@ -260,7 +260,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { team1Set1, team1Set2, team1Set3, team2Set1, team2Set2, team2Set3, status } = req.body;
       
       // Get the existing match to check if it was already completed
-      const existingMatch = await storage.updateMatch(req.params.id, {});
+      const existingMatch = await storage.getMatch(req.params.id);
       if (!existingMatch) {
         return res.status(404).json({ error: "Match not found" });
       }
