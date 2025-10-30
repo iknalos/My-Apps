@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -23,6 +23,14 @@ interface ScoreEntryDialogProps {
   trigger?: React.ReactNode;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  initialScores?: {
+    team1Set1: number;
+    team1Set2: number;
+    team1Set3: number;
+    team2Set1: number;
+    team2Set2: number;
+    team2Set3: number;
+  };
   onScoreSubmit: (matchId: string, scores: {
     team1Set1: number;
     team1Set2: number;
@@ -42,6 +50,7 @@ export default function ScoreEntryDialog({
   trigger,
   open: controlledOpen,
   onOpenChange,
+  initialScores,
   onScoreSubmit,
 }: ScoreEntryDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false);
@@ -54,6 +63,26 @@ export default function ScoreEntryDialog({
   const [team2Set2, setTeam2Set2] = useState("");
   const [team2Set3, setTeam2Set3] = useState("");
   const { toast } = useToast();
+
+  // Pre-populate fields when editing existing scores
+  useEffect(() => {
+    if (initialScores && open) {
+      setTeam1Set1(initialScores.team1Set1 > 0 ? String(initialScores.team1Set1) : "");
+      setTeam1Set2(initialScores.team1Set2 > 0 ? String(initialScores.team1Set2) : "");
+      setTeam1Set3(initialScores.team1Set3 > 0 ? String(initialScores.team1Set3) : "");
+      setTeam2Set1(initialScores.team2Set1 > 0 ? String(initialScores.team2Set1) : "");
+      setTeam2Set2(initialScores.team2Set2 > 0 ? String(initialScores.team2Set2) : "");
+      setTeam2Set3(initialScores.team2Set3 > 0 ? String(initialScores.team2Set3) : "");
+    } else if (!open) {
+      // Clear fields when dialog closes
+      setTeam1Set1("");
+      setTeam1Set2("");
+      setTeam1Set3("");
+      setTeam2Set1("");
+      setTeam2Set2("");
+      setTeam2Set3("");
+    }
+  }, [initialScores, open]);
 
   // Validate badminton scoring rules
   const validateSetScore = (score1: number, score2: number, setNumber: number): string | null => {
@@ -200,9 +229,9 @@ export default function ScoreEntryDialog({
       </DialogTrigger>
       <DialogContent className="sm:max-w-[450px]">
         <DialogHeader>
-          <DialogTitle>Enter Match Score</DialogTitle>
+          <DialogTitle>{initialScores ? "Edit Match Score" : "Enter Match Score"}</DialogTitle>
           <DialogDescription>
-            Record the final score for this match. Each set: first to 21 with 2-point difference, or first to 30 (regardless of difference).
+            {initialScores ? "Update the score for this match." : "Record the final score for this match."} Each set: first to 21 with 2-point difference, or first to 30 (regardless of difference).
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>

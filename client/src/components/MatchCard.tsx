@@ -8,6 +8,7 @@ interface Team {
   player2?: string;
   score?: number;
   isWinner?: boolean;
+  setScores?: string; // e.g., "21-19, 21-18"
 }
 
 interface MatchCardProps {
@@ -74,19 +75,24 @@ export default function MatchCard({
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          <div className="flex items-center justify-between p-3 rounded-md bg-muted/50">
+          <div className={`flex items-center justify-between p-3 rounded-md ${team1.isWinner ? "bg-green-100 dark:bg-green-900/30" : "bg-muted/50"}`}>
             <div className="flex-1">
-              <div className={`font-medium ${team1.isWinner ? "text-green-600 dark:text-green-400" : ""}`}>
+              <div className="font-medium">
                 {team1.player1}
               </div>
               {team1.player2 && (
-                <div className={`text-sm ${team1.isWinner ? "text-green-600 dark:text-green-400" : "text-muted-foreground"}`}>
+                <div className="text-sm text-muted-foreground">
                   {team1.player2}
+                </div>
+              )}
+              {status === "completed" && team1.setScores && (
+                <div className="text-xs text-muted-foreground mt-1">
+                  {team1.setScores}
                 </div>
               )}
             </div>
             {status === "completed" && team1.score !== undefined && (
-              <div className={`text-2xl font-mono font-bold ${team1.isWinner ? "text-green-600 dark:text-green-400" : ""}`}>
+              <div className="text-2xl font-mono font-bold">
                 {team1.score}
               </div>
             )}
@@ -94,19 +100,24 @@ export default function MatchCard({
 
           <div className="text-center text-sm font-semibold text-muted-foreground">vs</div>
 
-          <div className="flex items-center justify-between p-3 rounded-md bg-muted/50">
+          <div className={`flex items-center justify-between p-3 rounded-md ${team2.isWinner ? "bg-green-100 dark:bg-green-900/30" : "bg-muted/50"}`}>
             <div className="flex-1">
-              <div className={`font-medium ${team2.isWinner ? "text-green-600 dark:text-green-400" : ""}`}>
+              <div className="font-medium">
                 {team2.player1}
               </div>
               {team2.player2 && (
-                <div className={`text-sm ${team2.isWinner ? "text-green-600 dark:text-green-400" : "text-muted-foreground"}`}>
+                <div className="text-sm text-muted-foreground">
                   {team2.player2}
+                </div>
+              )}
+              {status === "completed" && team2.setScores && (
+                <div className="text-xs text-muted-foreground mt-1">
+                  {team2.setScores}
                 </div>
               )}
             </div>
             {status === "completed" && team2.score !== undefined && (
-              <div className={`text-2xl font-mono font-bold ${team2.isWinner ? "text-green-600 dark:text-green-400" : ""}`}>
+              <div className="text-2xl font-mono font-bold">
                 {team2.score}
               </div>
             )}
@@ -121,7 +132,7 @@ export default function MatchCard({
           </span>
         </div>
 
-        {status !== "completed" && (
+        {onEnterScore && (
           <Button
             className="w-full"
             variant="outline"
@@ -129,7 +140,7 @@ export default function MatchCard({
             data-testid="button-enter-score"
           >
             <Trophy className="h-4 w-4 mr-2" />
-            Enter Score
+            {status === "completed" ? "Edit Score" : "Enter Score"}
           </Button>
         )}
       </CardContent>

@@ -110,6 +110,21 @@ export default function SessionDetail() {
     const team1IsWinner = team1SetsWon >= 2;
     const team2IsWinner = team2SetsWon >= 2;
     
+    // Format set scores for display (e.g., "21-19, 21-18")
+    const formatSetScores = (team1Sets: (number | null)[], team2Sets: (number | null)[]) => {
+      const scores: string[] = [];
+      for (let i = 0; i < 3; i++) {
+        if (team1Sets[i] !== null && team2Sets[i] !== null) {
+          scores.push(`${team1Sets[i]}-${team2Sets[i]}`);
+        }
+      }
+      return scores.join(", ");
+    };
+    
+    const team1Sets = [match.team1Set1, match.team1Set2, match.team1Set3];
+    const team2Sets = [match.team2Set1, match.team2Set2, match.team2Set3];
+    const setScores = formatSetScores(team1Sets, team2Sets);
+    
     return {
       id: match.id,
       courtNumber: match.courtNumber,
@@ -120,12 +135,14 @@ export default function SessionDetail() {
         player2: match.team1Player2Id ? getPlayerName(match.team1Player2Id) : undefined,
         score: team1SetsWon > 0 ? team1SetsWon : undefined,
         isWinner: team1IsWinner,
+        setScores: setScores,
       },
       team2: {
         player1: getPlayerName(match.team2Player1Id),
         player2: match.team2Player2Id ? getPlayerName(match.team2Player2Id) : undefined,
         score: team2SetsWon > 0 ? team2SetsWon : undefined,
         isWinner: team2IsWinner,
+        setScores: setScores,
       },
       status: match.status as "scheduled" | "in-progress" | "completed",
       skillBalance: 0, // Can calculate this if needed
@@ -133,6 +150,13 @@ export default function SessionDetail() {
       team1Player2Id: match.team1Player2Id,
       team2Player1Id: match.team2Player1Id,
       team2Player2Id: match.team2Player2Id,
+      // Store raw scores for editing
+      team1Set1: match.team1Set1,
+      team1Set2: match.team1Set2,
+      team1Set3: match.team1Set3,
+      team2Set1: match.team2Set1,
+      team2Set2: match.team2Set2,
+      team2Set3: match.team2Set3,
     };
   };
 
@@ -212,25 +236,31 @@ export default function SessionDetail() {
                     <div key={match.id}>
                       <MatchCard
                         {...match}
-                        onEnterScore={match.status !== "completed" ? () => setSelectedMatchId(match.id) : undefined}
+                        onEnterScore={() => setSelectedMatchId(match.id)}
                       />
-                      {match.status !== "completed" && (
-                        <ScoreEntryDialog
-                          matchId={match.id}
-                          team1Player1={match.team1.player1}
-                          team1Player2={match.team1.player2}
-                          team2Player1={match.team2.player1}
-                          team2Player2={match.team2.player2}
-                          open={selectedMatchId === match.id}
-                          onOpenChange={(open) => {
-                            if (!open) setSelectedMatchId(null);
-                          }}
-                          onScoreSubmit={(matchId, scores) => {
-                            handleScoreSubmit(matchId, scores);
-                            setSelectedMatchId(null);
-                          }}
-                        />
-                      )}
+                      <ScoreEntryDialog
+                        matchId={match.id}
+                        team1Player1={match.team1.player1}
+                        team1Player2={match.team1.player2}
+                        team2Player1={match.team2.player1}
+                        team2Player2={match.team2.player2}
+                        open={selectedMatchId === match.id}
+                        onOpenChange={(open) => {
+                          if (!open) setSelectedMatchId(null);
+                        }}
+                        initialScores={match.status === "completed" ? {
+                          team1Set1: match.team1Set1 || 0,
+                          team1Set2: match.team1Set2 || 0,
+                          team1Set3: match.team1Set3 || 0,
+                          team2Set1: match.team2Set1 || 0,
+                          team2Set2: match.team2Set2 || 0,
+                          team2Set3: match.team2Set3 || 0,
+                        } : undefined}
+                        onScoreSubmit={(matchId, scores) => {
+                          handleScoreSubmit(matchId, scores);
+                          setSelectedMatchId(null);
+                        }}
+                      />
                     </div>
                   ))}
                 </div>
