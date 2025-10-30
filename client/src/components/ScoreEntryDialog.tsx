@@ -49,6 +49,46 @@ export default function ScoreEntryDialog({
   const [team2Set3, setTeam2Set3] = useState("");
   const { toast } = useToast();
 
+  // Validate badminton scoring rules
+  const validateSetScore = (score1: number, score2: number, setNumber: number): string | null => {
+    // Check that scores are within valid range
+    if (score1 < 0 || score2 < 0) {
+      return `Set ${setNumber}: Scores cannot be negative.`;
+    }
+    if (score1 > 30 || score2 > 30) {
+      return `Set ${setNumber}: Maximum score is 30.`;
+    }
+    
+    // No ties allowed
+    if (score1 === score2) {
+      return `Set ${setNumber}: Cannot be tied. Each set must have a winner.`;
+    }
+    
+    const winner = score1 > score2 ? score1 : score2;
+    const loser = score1 > score2 ? score2 : score1;
+    
+    // Case 1: Winner reached 30 (always valid)
+    if (winner === 30) {
+      return null;
+    }
+    
+    // Case 2: Winner has 21+ points
+    if (winner >= 21) {
+      const difference = winner - loser;
+      
+      // If winner is between 21-29, must have 2-point lead
+      if (difference < 2) {
+        return `Set ${setNumber}: To win with ${winner} points, you need a 2-point difference. Current difference is ${difference}.`;
+      }
+      
+      // Valid win with 21+ and 2-point lead
+      return null;
+    }
+    
+    // Case 3: Winner has less than 21 points - invalid
+    return `Set ${setNumber}: Winner must reach at least 21 points (or 30). Current score: ${winner}-${loser}.`;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -68,20 +108,23 @@ export default function ScoreEntryDialog({
     const oppSet1 = parseInt(team2Set1);
     const oppSet2 = parseInt(team2Set2);
     
-    // Validate that each played set has a winner (no ties)
-    if (set1 === oppSet1) {
+    // Validate Set 1 with badminton rules
+    const set1Error = validateSetScore(set1, oppSet1, 1);
+    if (set1Error) {
       toast({
-        title: "Invalid score",
-        description: "Set 1 cannot be tied. Each set must have a winner.",
+        title: "Invalid Score",
+        description: set1Error,
         variant: "destructive",
       });
       return;
     }
     
-    if (set2 === oppSet2) {
+    // Validate Set 2 with badminton rules
+    const set2Error = validateSetScore(set2, oppSet2, 2);
+    if (set2Error) {
       toast({
-        title: "Invalid score",
-        description: "Set 2 cannot be tied. Each set must have a winner.",
+        title: "Invalid Score",
+        description: set2Error,
         variant: "destructive",
       });
       return;
@@ -107,11 +150,12 @@ export default function ScoreEntryDialog({
       const set3 = parseInt(team1Set3);
       const oppSet3 = parseInt(team2Set3);
       
-      // Set 3 must have a winner (no ties allowed)
-      if (set3 === oppSet3) {
+      // Validate Set 3 with badminton rules
+      const set3Error = validateSetScore(set3, oppSet3, 3);
+      if (set3Error) {
         toast({
-          title: "Invalid score",
-          description: "Set 3 cannot be tied. The deciding set must have a winner.",
+          title: "Invalid Score",
+          description: set3Error,
           variant: "destructive",
         });
         return;
@@ -152,7 +196,7 @@ export default function ScoreEntryDialog({
         <DialogHeader>
           <DialogTitle>Enter Match Score</DialogTitle>
           <DialogDescription>
-            Record the final score for this match.
+            Record the final score for this match. Each set: first to 21 with 2-point difference, or first to 30 (regardless of difference).
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
