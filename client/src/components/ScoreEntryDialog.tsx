@@ -14,27 +14,63 @@ import { Label } from "@/components/ui/label";
 import { Trophy } from "lucide-react";
 
 interface ScoreEntryDialogProps {
+  matchId: string;
   team1Player1: string;
   team1Player2?: string;
   team2Player1: string;
   team2Player2?: string;
   trigger?: React.ReactNode;
+  onScoreSubmit: (matchId: string, scores: {
+    team1Set1: number;
+    team1Set2: number;
+    team1Set3: number;
+    team2Set1: number;
+    team2Set2: number;
+    team2Set3: number;
+  }) => void;
 }
 
 export default function ScoreEntryDialog({
+  matchId,
   team1Player1,
   team1Player2,
   team2Player1,
   team2Player2,
   trigger,
+  onScoreSubmit,
 }: ScoreEntryDialogProps) {
   const [open, setOpen] = useState(false);
-  const [team1Score, setTeam1Score] = useState("");
-  const [team2Score, setTeam2Score] = useState("");
+  const [team1Set1, setTeam1Set1] = useState("");
+  const [team1Set2, setTeam1Set2] = useState("");
+  const [team1Set3, setTeam1Set3] = useState("");
+  const [team2Set1, setTeam2Set1] = useState("");
+  const [team2Set2, setTeam2Set2] = useState("");
+  const [team2Set3, setTeam2Set3] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Score submitted:", { team1Score, team2Score });
+    
+    // Validate that at least the first 2 sets are filled
+    if (!team1Set1 || !team2Set1 || !team1Set2 || !team2Set2) {
+      return;
+    }
+    
+    onScoreSubmit(matchId, {
+      team1Set1: parseInt(team1Set1),
+      team1Set2: parseInt(team1Set2),
+      team1Set3: team1Set3 ? parseInt(team1Set3) : 0,
+      team2Set1: parseInt(team2Set1),
+      team2Set2: parseInt(team2Set2),
+      team2Set3: team2Set3 ? parseInt(team2Set3) : 0,
+    });
+    
+    // Reset form
+    setTeam1Set1("");
+    setTeam1Set2("");
+    setTeam1Set3("");
+    setTeam2Set1("");
+    setTeam2Set2("");
+    setTeam2Set3("");
     setOpen(false);
   };
 
@@ -57,40 +93,104 @@ export default function ScoreEntryDialog({
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="space-y-6 py-4">
-            <div className="space-y-2">
-              <Label>Team 1</Label>
+            <div className="space-y-3">
+              <Label className="text-base font-semibold">Team 1</Label>
               <div className="p-3 rounded-md bg-muted">
                 <div className="font-medium">{team1Player1}</div>
                 {team1Player2 && (
                   <div className="text-sm text-muted-foreground">{team1Player2}</div>
                 )}
               </div>
-              <Input
-                type="number"
-                placeholder="Score"
-                min="0"
-                value={team1Score}
-                onChange={(e) => setTeam1Score(e.target.value)}
-                data-testid="input-team1-score"
-              />
+              <div className="grid grid-cols-3 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">Set 1</Label>
+                  <Input
+                    type="number"
+                    placeholder="0"
+                    min="0"
+                    max="30"
+                    value={team1Set1}
+                    onChange={(e) => setTeam1Set1(e.target.value)}
+                    data-testid="input-team1-set1"
+                    required
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Set 2</Label>
+                  <Input
+                    type="number"
+                    placeholder="0"
+                    min="0"
+                    max="30"
+                    value={team1Set2}
+                    onChange={(e) => setTeam1Set2(e.target.value)}
+                    data-testid="input-team1-set2"
+                    required
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Set 3</Label>
+                  <Input
+                    type="number"
+                    placeholder="0"
+                    min="0"
+                    max="30"
+                    value={team1Set3}
+                    onChange={(e) => setTeam1Set3(e.target.value)}
+                    data-testid="input-team1-set3"
+                  />
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>Team 2</Label>
+            <div className="space-y-3">
+              <Label className="text-base font-semibold">Team 2</Label>
               <div className="p-3 rounded-md bg-muted">
                 <div className="font-medium">{team2Player1}</div>
                 {team2Player2 && (
                   <div className="text-sm text-muted-foreground">{team2Player2}</div>
                 )}
               </div>
-              <Input
-                type="number"
-                placeholder="Score"
-                min="0"
-                value={team2Score}
-                onChange={(e) => setTeam2Score(e.target.value)}
-                data-testid="input-team2-score"
-              />
+              <div className="grid grid-cols-3 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">Set 1</Label>
+                  <Input
+                    type="number"
+                    placeholder="0"
+                    min="0"
+                    max="30"
+                    value={team2Set1}
+                    onChange={(e) => setTeam2Set1(e.target.value)}
+                    data-testid="input-team2-set1"
+                    required
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Set 2</Label>
+                  <Input
+                    type="number"
+                    placeholder="0"
+                    min="0"
+                    max="30"
+                    value={team2Set2}
+                    onChange={(e) => setTeam2Set2(e.target.value)}
+                    data-testid="input-team2-set2"
+                    required
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Set 3</Label>
+                  <Input
+                    type="number"
+                    placeholder="0"
+                    min="0"
+                    max="30"
+                    value={team2Set3}
+                    onChange={(e) => setTeam2Set3(e.target.value)}
+                    data-testid="input-team2-set3"
+                  />
+                </div>
+              </div>
             </div>
           </div>
           <DialogFooter>

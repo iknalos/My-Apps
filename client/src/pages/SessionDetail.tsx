@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,12 +9,15 @@ import { format } from "date-fns";
 import MatchCard from "@/components/MatchCard";
 import ScoreEntryDialog from "@/components/ScoreEntryDialog";
 import type { Session, Match, Player } from "@shared/schema";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 export default function SessionDetail() {
   const params = useParams();
   const sessionId = params.id;
   const [, setLocation] = useLocation();
   const [activeRound, setActiveRound] = useState(1);
+  const { toast } = useToast();
 
   const { data: session, isLoading: sessionLoading } = useQuery<Session>({
     queryKey: ["/api/sessions", sessionId],
@@ -29,6 +32,53 @@ export default function SessionDetail() {
   const { data: players = [] } = useQuery<Player[]>({
     queryKey: ["/api/players"],
   });
+
+  const updateScoreMutation = useMutation({
+    mutationFn: async ({ matchId, scores }: {
+      matchId: string;
+      scores: {
+        team1Set1: number;
+        team1Set2: number;
+        team1Set3: number;
+        team2Set1: number;
+        team2Set2: number;
+        team2Set3: number;
+      };
+    }) => {
+      return await apiRequest(`/api/matches/${matchId}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          ...scores,
+          status: "completed",
+        }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/sessions", sessionId, "matches"] });
+      toast({
+        title: "Score saved",
+        description: "Match score has been successfully recorded.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to save score. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleScoreSubmit = (matchId: string, scores: {
+    team1Set1: number;
+    team1Set2: number;
+    team1Set3: number;
+    team2Set1: number;
+    team2Set2: number;
+    team2Set3: number;
+  }) => {
+    updateScoreMutation.mutate({ matchId, scores });
+  };
 
   if (sessionLoading || !session) {
     return (
@@ -58,6 +108,10 @@ export default function SessionDetail() {
       return s != null && team1Set != null && s > team1Set;
     }).length;
     
+    // Determine winner (team that won 2 or more sets)
+    const team1IsWinner = team1SetsWon >= 2;
+    const team2IsWinner = team2SetsWon >= 2;
+    
     return {
       id: match.id,
       courtNumber: match.courtNumber,
@@ -66,14 +120,20 @@ export default function SessionDetail() {
         player1: getPlayerName(match.team1Player1Id),
         player2: match.team1Player2Id ? getPlayerName(match.team1Player2Id) : undefined,
         score: team1SetsWon > 0 ? team1SetsWon : undefined,
+        isWinner: team1IsWinner,
       },
       team2: {
         player1: getPlayerName(match.team2Player1Id),
         player2: match.team2Player2Id ? getPlayerName(match.team2Player2Id) : undefined,
         score: team2SetsWon > 0 ? team2SetsWon : undefined,
+        isWinner: team2IsWinner,
       },
       status: match.status as "scheduled" | "in-progress" | "completed",
       skillBalance: 0, // Can calculate this if needed
+      team1Player1Id: match.team1Player1Id,
+      team1Player2Id: match.team1Player2Id,
+      team2Player1Id: match.team2Player1Id,
+      team2Player2Id: match.team2Player2Id,
     };
   };
 
@@ -150,11 +210,24 @@ export default function SessionDetail() {
               {matchesByRound[round] && matchesByRound[round].length > 0 ? (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   {matchesByRound[round].map((match) => (
-                    <MatchCard
-                      key={match.id}
-                      {...match}
-                      onEnterScore={() => console.log("Enter score for match:", match.id)}
-                    />
+                    <div key={match.id}>
+                      <MatchCard
+                        {...match}
+                        onEnterScore={() => {}}
+                      />
+                      {match.status !== "completed" && (
+                        <div className="mt-2">
+                          <ScoreEntryDialog
+                            matchId={match.id}
+                            team1Player1={match.team1.player1}
+                            team1Player2={match.team1.player2}
+                            team2Player1={match.team2.player1}
+                            team2Player2={match.team2.player2}
+                            onScoreSubmit={handleScoreSubmit}
+                          />
+                        </div>
+                      )}
+                    </div>
                   ))}
                 </div>
               ) : (

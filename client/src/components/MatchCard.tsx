@@ -7,6 +7,7 @@ interface Team {
   player1: string;
   player2?: string;
   score?: number;
+  isWinner?: boolean;
 }
 
 interface MatchCardProps {
@@ -56,13 +57,19 @@ export default function MatchCard({
         <div className="space-y-2">
           <div className="flex items-center justify-between p-3 rounded-md bg-muted/50">
             <div className="flex-1">
-              <div className="font-medium">{team1.player1}</div>
+              <div className={`font-medium ${team1.isWinner ? "text-green-600 dark:text-green-400" : ""}`}>
+                {team1.player1}
+              </div>
               {team1.player2 && (
-                <div className="text-sm text-muted-foreground">{team1.player2}</div>
+                <div className={`text-sm ${team1.isWinner ? "text-green-600 dark:text-green-400" : "text-muted-foreground"}`}>
+                  {team1.player2}
+                </div>
               )}
             </div>
             {status === "completed" && team1.score !== undefined && (
-              <div className="text-2xl font-mono font-bold">{team1.score}</div>
+              <div className={`text-2xl font-mono font-bold ${team1.isWinner ? "text-green-600 dark:text-green-400" : ""}`}>
+                {team1.score}
+              </div>
             )}
           </div>
 
@@ -70,13 +77,19 @@ export default function MatchCard({
 
           <div className="flex items-center justify-between p-3 rounded-md bg-muted/50">
             <div className="flex-1">
-              <div className="font-medium">{team2.player1}</div>
+              <div className={`font-medium ${team2.isWinner ? "text-green-600 dark:text-green-400" : ""}`}>
+                {team2.player1}
+              </div>
               {team2.player2 && (
-                <div className="text-sm text-muted-foreground">{team2.player2}</div>
+                <div className={`text-sm ${team2.isWinner ? "text-green-600 dark:text-green-400" : "text-muted-foreground"}`}>
+                  {team2.player2}
+                </div>
               )}
             </div>
             {status === "completed" && team2.score !== undefined && (
-              <div className="text-2xl font-mono font-bold">{team2.score}</div>
+              <div className={`text-2xl font-mono font-bold ${team2.isWinner ? "text-green-600 dark:text-green-400" : ""}`}>
+                {team2.score}
+              </div>
             )}
           </div>
         </div>

@@ -233,6 +233,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/matches/:id", async (req, res) => {
+    try {
+      const { team1Set1, team1Set2, team1Set3, team2Set1, team2Set2, team2Set3, status } = req.body;
+      
+      const updates = {
+        team1Set1: team1Set1 ?? undefined,
+        team1Set2: team1Set2 ?? undefined,
+        team1Set3: team1Set3 ?? undefined,
+        team2Set1: team2Set1 ?? undefined,
+        team2Set2: team2Set2 ?? undefined,
+        team2Set3: team2Set3 ?? undefined,
+        status: status ?? undefined,
+      };
+      
+      const match = await storage.updateMatch(req.params.id, updates);
+      if (!match) {
+        return res.status(404).json({ error: "Match not found" });
+      }
+      res.json(match);
+    } catch (error) {
+      console.error("Match update error:", error);
+      res.status(500).json({ error: "Failed to update match" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
