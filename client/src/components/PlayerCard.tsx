@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Edit, Building2 } from "lucide-react";
+import { useLocation } from "wouter";
 
 interface PlayerCardProps {
   id: string;
@@ -18,6 +19,7 @@ interface PlayerCardProps {
 }
 
 export default function PlayerCard({
+  id,
   name,
   gender,
   club,
@@ -28,6 +30,8 @@ export default function PlayerCard({
   preferredCategories,
   onEdit,
 }: PlayerCardProps) {
+  const [, setLocation] = useLocation();
+  
   const initials = name
     .split(" ")
     .map((n) => n[0])
@@ -36,8 +40,21 @@ export default function PlayerCard({
 
   const genderColor = gender === "Male" ? "bg-blue-500/10 text-blue-700 dark:text-blue-400" : "bg-pink-500/10 text-pink-700 dark:text-pink-400";
 
+  const handleCardClick = () => {
+    setLocation(`/players/${id}`);
+  };
+
+  const handleEditClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onEdit?.();
+  };
+
   return (
-    <Card className="hover-elevate">
+    <Card 
+      className="hover-elevate cursor-pointer"
+      onClick={handleCardClick}
+      data-testid={`card-player-${id}`}
+    >
       <CardContent className="p-4">
         <div className="flex items-start gap-4">
           <Avatar className="h-12 w-12">
@@ -50,7 +67,7 @@ export default function PlayerCard({
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 shrink-0"
-                onClick={onEdit}
+                onClick={handleEditClick}
                 data-testid="button-edit-player"
               >
                 <Edit className="h-4 w-4" />

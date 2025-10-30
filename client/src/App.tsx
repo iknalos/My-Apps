@@ -9,6 +9,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import Landing from "@/pages/Landing";
 import Dashboard from "@/pages/Dashboard";
 import Players from "@/pages/Players";
+import PlayerProfile from "@/pages/PlayerProfile";
 import Sessions from "@/pages/Sessions";
 import SessionDetail from "@/pages/SessionDetail";
 import NotFound from "@/pages/not-found";
@@ -20,6 +21,7 @@ function Router() {
       <Route path="/landing" component={Landing} />
       <Route path="/" component={Dashboard} />
       <Route path="/players" component={Players} />
+      <Route path="/players/:id" component={PlayerProfile} />
       <Route path="/sessions" component={Sessions} />
       <Route path="/sessions/:id" component={SessionDetail} />
       <Route component={NotFound} />
