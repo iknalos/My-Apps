@@ -115,14 +115,14 @@ export default function Login({ onLoginSuccess }: LoginProps) {
 
             <div className="mt-4 text-center text-sm text-muted-foreground">
               Don't have an account?{" "}
-              <Button
-                variant="link"
-                className="p-0 h-auto font-normal"
+              <button
+                type="button"
+                className="text-primary hover:underline font-medium"
                 onClick={() => setLocation("/register")}
                 data-testid="link-register"
               >
                 Register here
-              </Button>
+              </button>
             </div>
           </CardContent>
         </Card>

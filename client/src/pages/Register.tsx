@@ -150,14 +150,14 @@ export default function Register({ onRegisterSuccess }: RegisterProps) {
 
             <div className="mt-4 text-center text-sm text-muted-foreground">
               Already have an account?{" "}
-              <Button
-                variant="link"
-                className="p-0 h-auto font-normal"
+              <button
+                type="button"
+                className="text-primary hover:underline font-medium"
                 onClick={() => setLocation("/login")}
                 data-testid="link-login"
               >
                 Sign in here
-              </Button>
+              </button>
             </div>
           </CardContent>
         </Card>
