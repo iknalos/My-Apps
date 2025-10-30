@@ -9,14 +9,13 @@ import { User, Trophy, Calendar } from "lucide-react";
 export default function PlayerDashboard() {
   const { user } = useAuth();
 
-  const { data: players, isLoading: playersLoading } = useQuery<Player[]>({
-    queryKey: ["/api/players"],
+  // SECURITY: Use player-specific endpoints that only return the authenticated user's data
+  const { data: player, isLoading: playerLoading } = useQuery<Player>({
+    queryKey: ["/api/players/profile"],
   });
 
-  const player = players?.find(p => p.userId === user?.id);
-
   const { data: matches, isLoading: matchesLoading } = useQuery<Match[]>({
-    queryKey: ["/api/players", player?.id, "matches"],
+    queryKey: ["/api/players/profile/matches"],
     enabled: !!player?.id,
   });
 
@@ -24,7 +23,7 @@ export default function PlayerDashboard() {
     queryKey: ["/api/sessions"],
   });
 
-  if (playersLoading) {
+  if (playerLoading) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-40 w-full" />

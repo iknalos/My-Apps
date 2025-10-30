@@ -157,12 +157,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Profile already exists" });
       }
 
-      const validatedData = insertPlayerSchema.parse({ ...req.body, userId: user.id });
+      // SECURITY: Force userId to be the authenticated user's ID, ignore any client-supplied userId
+      const { userId: _, ...bodyData } = req.body;
+      const validatedData = insertPlayerSchema.parse({ ...bodyData, userId: user.id });
       const player = await storage.createPlayer(validatedData);
       res.status(201).json(player);
     } catch (error) {
       console.error("Player profile creation error:", error);
       res.status(400).json({ error: "Invalid player data" });
+    }
+  });
+
+  // Get current player's profile
+  app.get("/api/players/profile", requireAuth, async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const player = await storage.getPlayerByUserId(req.session.userId);
+      if (!player) {
+        return res.status(404).json({ error: "Profile not found" });
+      }
+
+      res.json(player);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch profile" });
     }
   });
 
@@ -183,7 +203,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Profile not found" });
       }
 
-      // Players can only update name and gender, not ratings
+      // SECURITY: Players can only update name and gender, not ratings or userId
+      // Explicitly whitelist allowed fields and ignore everything else
       const { name, gender } = req.body;
       const updates: any = {};
       if (name !== undefined) updates.name = name;
@@ -193,6 +214,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(updatedPlayer);
     } catch (error) {
       res.status(400).json({ error: "Failed to update profile" });
+    }
+  });
+
+  // Get current player's matches
+  app.get("/api/players/profile/matches", requireAuth, async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const player = await storage.getPlayerByUserId(req.session.userId);
+      if (!player) {
+        return res.status(404).json({ error: "Profile not found" });
+      }
+
+      const matches = await storage.getMatchesByPlayer(player.id);
+      res.json(matches);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch matches" });
     }
   });
 
