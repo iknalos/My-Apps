@@ -42,7 +42,7 @@ Preferred communication style: Simple, everyday language.
 - **Durable session storage** using connect-pg-simple with PostgreSQL
 - In-memory storage abstraction (IStorage interface) for data persistence
 - RESTful API design
-- Secure HTTP-only cookies for session management
+- Secure HTTP-only cookies for session management (sameSite: 'lax' for production compatibility)
 
 **Database:**
 - Drizzle ORM configured for PostgreSQL
