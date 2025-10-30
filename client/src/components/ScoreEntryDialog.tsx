@@ -171,6 +171,17 @@ export default function ScoreEntryDialog({
     const team2WonSet2 = oppSet2 > set2;
     
     const setsAreSplit = (team1WonSet1 && team2WonSet2) || (team2WonSet1 && team1WonSet2);
+    const matchAlreadyDecided = (team1WonSet1 && team1WonSet2) || (team2WonSet1 && team2WonSet2);
+    
+    // Prevent 3-0 scores - match ends at 2-0
+    if (matchAlreadyDecided && (team1Set3 || team2Set3)) {
+      toast({
+        title: "Invalid Score",
+        description: "Match already decided 2-0. Set 3 should not be played when one team wins the first two sets.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     // If sets are split, require set 3 and validate it has a winner
     if (setsAreSplit) {
