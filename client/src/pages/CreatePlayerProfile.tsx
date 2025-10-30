@@ -206,7 +206,8 @@ export default function CreatePlayerProfile() {
               </CardHeader>
               <CardContent>
                 <SkillAssessment
-                  selectedCategories={selectedCategories}
+                  gender={gender}
+                  preferredCategories={selectedCategories}
                   onComplete={handleAssessmentComplete}
                   onBack={handleBack}
                   isLoading={createProfileMutation.isPending}

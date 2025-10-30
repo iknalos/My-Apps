@@ -23,6 +23,7 @@ interface SkillAssessmentProps {
   preferredCategories: string[];
   onComplete: (ratings: CategoryRatings) => void;
   onBack?: () => void;
+  isLoading?: boolean;
 }
 
 const ratingOptions = [
@@ -74,7 +75,7 @@ const mixedDoublesQuestions: Question[] = [
 
 type CategoryType = "singles" | "doubles" | "mixed";
 
-export default function SkillAssessment({ gender, preferredCategories, onComplete, onBack }: SkillAssessmentProps) {
+export default function SkillAssessment({ gender, preferredCategories, onComplete, onBack, isLoading }: SkillAssessmentProps) {
   const [activeCategories, setActiveCategories] = useState<CategoryType[]>([]);
   const [currentCategoryIndex, setCurrentCategoryIndex] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
