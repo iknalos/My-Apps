@@ -26,6 +26,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/players/:id/rating-history", async (req, res) => {
+    try {
+      const ratingHistory = await storage.getRatingHistoriesByPlayer(req.params.id);
+      res.json(ratingHistory);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch rating history" });
+    }
+  });
+
+  app.get("/api/players/:id/matches", async (req, res) => {
+    try {
+      const matches = await storage.getMatchesByPlayer(req.params.id);
+      res.json(matches);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch player matches" });
+    }
+  });
+
   app.post("/api/players", async (req, res) => {
     try {
       const validatedData = insertPlayerSchema.parse(req.body);

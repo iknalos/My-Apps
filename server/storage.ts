@@ -26,6 +26,7 @@ export interface IStorage {
   deleteRegistration(id: string): Promise<boolean>;
 
   getMatchesBySession(sessionId: string): Promise<Match[]>;
+  getMatchesByPlayer(playerId: string): Promise<Match[]>;
   createMatch(match: InsertMatch): Promise<Match>;
   updateMatch(id: string, match: Partial<InsertMatch>): Promise<Match | undefined>;
   deleteMatchesBySession(sessionId: string): Promise<number>;
@@ -181,6 +182,16 @@ export class MemStorage implements IStorage {
     return Array.from(this.matches.values()).filter(
       (match) => match.sessionId === sessionId
     ).sort((a, b) => a.roundNumber - b.roundNumber || a.courtNumber - b.courtNumber);
+  }
+
+  async getMatchesByPlayer(playerId: string): Promise<Match[]> {
+    return Array.from(this.matches.values()).filter(
+      (match) => 
+        match.team1Player1Id === playerId ||
+        match.team1Player2Id === playerId ||
+        match.team2Player1Id === playerId ||
+        match.team2Player2Id === playerId
+    ).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }
 
   async createMatch(insertMatch: InsertMatch): Promise<Match> {
@@ -343,6 +354,17 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(matches)
       .where(eq(matches.sessionId, sessionId))
       .orderBy(matches.roundNumber, matches.courtNumber);
+  }
+
+  async getMatchesByPlayer(playerId: string): Promise<Match[]> {
+    const allMatches = await db.select().from(matches);
+    return allMatches.filter(
+      (match) =>
+        match.team1Player1Id === playerId ||
+        match.team1Player2Id === playerId ||
+        match.team2Player1Id === playerId ||
+        match.team2Player2Id === playerId
+    ).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }
 
   async createMatch(insertMatch: InsertMatch): Promise<Match> {
