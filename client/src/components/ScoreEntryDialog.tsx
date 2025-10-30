@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Trophy } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface ScoreEntryDialogProps {
   matchId: string;
@@ -46,22 +47,85 @@ export default function ScoreEntryDialog({
   const [team2Set1, setTeam2Set1] = useState("");
   const [team2Set2, setTeam2Set2] = useState("");
   const [team2Set3, setTeam2Set3] = useState("");
+  const { toast } = useToast();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validate that at least the first 2 sets are filled
     if (!team1Set1 || !team2Set1 || !team1Set2 || !team2Set2) {
+      toast({
+        title: "Incomplete scores",
+        description: "Please enter scores for both sets 1 and 2.",
+        variant: "destructive",
+      });
       return;
     }
     
+    // Parse all filled set scores
+    const set1 = parseInt(team1Set1);
+    const set2 = parseInt(team1Set2);
+    const oppSet1 = parseInt(team2Set1);
+    const oppSet2 = parseInt(team2Set2);
+    
+    // Validate that each played set has a winner (no ties)
+    if (set1 === oppSet1) {
+      toast({
+        title: "Invalid score",
+        description: "Set 1 cannot be tied. Each set must have a winner.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (set2 === oppSet2) {
+      toast({
+        title: "Invalid score",
+        description: "Set 2 cannot be tied. Each set must have a winner.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const team1WonSet1 = set1 > oppSet1;
+    const team1WonSet2 = set2 > oppSet2;
+    const team2WonSet1 = oppSet1 > set1;
+    const team2WonSet2 = oppSet2 > set2;
+    
+    const setsAreSplit = (team1WonSet1 && team2WonSet2) || (team2WonSet1 && team1WonSet2);
+    
+    // If sets are split, require set 3 and validate it has a winner
+    if (setsAreSplit) {
+      if (!team1Set3 || !team2Set3) {
+        toast({
+          title: "Deciding set required",
+          description: "Sets are split 1-1. Please enter set 3 scores.",
+          variant: "destructive",
+        });
+        return;
+      }
+      const set3 = parseInt(team1Set3);
+      const oppSet3 = parseInt(team2Set3);
+      
+      // Set 3 must have a winner (no ties allowed)
+      if (set3 === oppSet3) {
+        toast({
+          title: "Invalid score",
+          description: "Set 3 cannot be tied. The deciding set must have a winner.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+    
+    // Send null for unplayed set 3 instead of 0
     onScoreSubmit(matchId, {
-      team1Set1: parseInt(team1Set1),
-      team1Set2: parseInt(team1Set2),
-      team1Set3: team1Set3 ? parseInt(team1Set3) : 0,
-      team2Set1: parseInt(team2Set1),
-      team2Set2: parseInt(team2Set2),
-      team2Set3: team2Set3 ? parseInt(team2Set3) : 0,
+      team1Set1: set1,
+      team1Set2: set2,
+      team1Set3: team1Set3 && team2Set3 ? parseInt(team1Set3) : 0,
+      team2Set1: oppSet1,
+      team2Set2: oppSet2,
+      team2Set3: team1Set3 && team2Set3 ? parseInt(team2Set3) : 0,
     });
     
     // Reset form
