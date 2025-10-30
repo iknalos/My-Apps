@@ -42,6 +42,7 @@ export default function CreateSessionDialog() {
   const [sessionTime, setSessionTime] = useState("19:00");
   const [capacity, setCapacity] = useState("");
   const [courtsAvailable, setCourtsAvailable] = useState("");
+  const [numberOfRounds, setNumberOfRounds] = useState("3");
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [maxSkillGap, setMaxSkillGap] = useState("");
   const [minGamesPerPlayer, setMinGamesPerPlayer] = useState("");
@@ -76,6 +77,7 @@ export default function CreateSessionDialog() {
     setSessionTime("19:00");
     setCapacity("");
     setCourtsAvailable("");
+    setNumberOfRounds("3");
     setSelectedTypes([]);
     setMaxSkillGap("");
     setMinGamesPerPlayer("");
@@ -90,7 +92,7 @@ export default function CreateSessionDialog() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!name || !sessionDate || !sessionTime || !capacity || !courtsAvailable || selectedTypes.length === 0) {
+    if (!name || !sessionDate || !sessionTime || !capacity || !courtsAvailable || !numberOfRounds || selectedTypes.length === 0) {
       toast({
         title: "Validation Error",
         description: "Please fill in all required fields",
@@ -106,6 +108,7 @@ export default function CreateSessionDialog() {
       sessionTypes: selectedTypes,
       capacity: parseInt(capacity),
       courtsAvailable: parseInt(courtsAvailable),
+      numberOfRounds: parseInt(numberOfRounds),
       maxSkillGap: maxSkillGap ? parseInt(maxSkillGap) : null,
       minGamesPerPlayer: minGamesPerPlayer ? parseInt(minGamesPerPlayer) : null,
       status: "upcoming",
@@ -118,7 +121,8 @@ export default function CreateSessionDialog() {
                       sessionDate !== "" && 
                       sessionTime !== "" &&
                       capacity !== "" &&
-                      courtsAvailable !== "" && 
+                      courtsAvailable !== "" &&
+                      numberOfRounds !== "" && 
                       selectedTypes.length > 0;
 
   return (
@@ -172,7 +176,7 @@ export default function CreateSessionDialog() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="capacity">Capacity *</Label>
                 <Select value={capacity} onValueChange={setCapacity}>
@@ -189,7 +193,7 @@ export default function CreateSessionDialog() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="courts">Courts Available *</Label>
+                <Label htmlFor="courts">Courts *</Label>
                 <Input
                   id="courts"
                   type="number"
@@ -198,6 +202,19 @@ export default function CreateSessionDialog() {
                   value={courtsAvailable}
                   onChange={(e) => setCourtsAvailable(e.target.value)}
                   data-testid="input-courts"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="rounds">Rounds *</Label>
+                <Input
+                  id="rounds"
+                  type="number"
+                  placeholder="3"
+                  min="1"
+                  max="10"
+                  value={numberOfRounds}
+                  onChange={(e) => setNumberOfRounds(e.target.value)}
+                  data-testid="input-rounds"
                 />
               </div>
             </div>

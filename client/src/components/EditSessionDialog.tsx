@@ -46,6 +46,7 @@ export default function EditSessionDialog({ session, open, onOpenChange }: EditS
   );
   const [capacity, setCapacity] = useState(session.capacity.toString());
   const [courtsAvailable, setCourtsAvailable] = useState(session.courtsAvailable.toString());
+  const [numberOfRounds, setNumberOfRounds] = useState(session.numberOfRounds.toString());
   const [selectedTypes, setSelectedTypes] = useState<string[]>(session.sessionTypes);
   const [maxSkillGap, setMaxSkillGap] = useState(session.maxSkillGap?.toString() || "");
   const [minGamesPerPlayer, setMinGamesPerPlayer] = useState(session.minGamesPerPlayer?.toString() || "");
@@ -88,6 +89,7 @@ export default function EditSessionDialog({ session, open, onOpenChange }: EditS
       sessionTypes: selectedTypes,
       capacity: parseInt(capacity),
       courtsAvailable: parseInt(courtsAvailable),
+      numberOfRounds: parseInt(numberOfRounds),
       maxSkillGap: maxSkillGap ? parseInt(maxSkillGap) : null,
       minGamesPerPlayer: minGamesPerPlayer ? parseInt(minGamesPerPlayer) : null,
       status: session.status,
@@ -131,7 +133,7 @@ export default function EditSessionDialog({ session, open, onOpenChange }: EditS
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-capacity">Capacity</Label>
                 <Select value={capacity} onValueChange={setCapacity}>
@@ -148,7 +150,7 @@ export default function EditSessionDialog({ session, open, onOpenChange }: EditS
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-courts">Courts Available</Label>
+                <Label htmlFor="edit-courts">Courts</Label>
                 <Input
                   id="edit-courts"
                   type="number"
@@ -158,6 +160,20 @@ export default function EditSessionDialog({ session, open, onOpenChange }: EditS
                   onChange={(e) => setCourtsAvailable(e.target.value)}
                   required
                   data-testid="input-edit-courts"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-rounds">Rounds</Label>
+                <Input
+                  id="edit-rounds"
+                  type="number"
+                  placeholder="3"
+                  min="1"
+                  max="10"
+                  value={numberOfRounds}
+                  onChange={(e) => setNumberOfRounds(e.target.value)}
+                  required
+                  data-testid="input-edit-rounds"
                 />
               </div>
             </div>

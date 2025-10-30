@@ -73,6 +73,20 @@ export default function JoinSessionDialog({ session, onSuccess }: JoinSessionDia
     );
   };
 
+  const selectedPlayer = players.find((p) => p.id === selectedPlayerId);
+
+  const isEventDisabled = (eventType: string): boolean => {
+    if (!selectedPlayer) return false;
+    
+    if (eventType === "Men's Doubles" && selectedPlayer.gender === "Female") {
+      return true;
+    }
+    if (eventType === "Women's Doubles" && selectedPlayer.gender === "Male") {
+      return true;
+    }
+    return false;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -133,22 +147,26 @@ export default function JoinSessionDialog({ session, onSuccess }: JoinSessionDia
                   Choose which events this player will participate in
                 </p>
                 <div className="space-y-2">
-                  {session.sessionTypes.map((eventType) => (
-                    <div key={eventType} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`event-${eventType}`}
-                        checked={selectedEvents.includes(eventType)}
-                        onCheckedChange={() => handleEventToggle(eventType)}
-                        data-testid={`checkbox-event-${eventType.toLowerCase().replace(/\s+/g, "-")}`}
-                      />
-                      <Label
-                        htmlFor={`event-${eventType}`}
-                        className="text-sm font-normal cursor-pointer"
-                      >
-                        {eventType}
-                      </Label>
-                    </div>
-                  ))}
+                  {session.sessionTypes.map((eventType) => {
+                    const disabled = isEventDisabled(eventType);
+                    return (
+                      <div key={eventType} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`event-${eventType}`}
+                          checked={selectedEvents.includes(eventType)}
+                          onCheckedChange={() => !disabled && handleEventToggle(eventType)}
+                          disabled={disabled}
+                          data-testid={`checkbox-event-${eventType.toLowerCase().replace(/\s+/g, "-")}`}
+                        />
+                        <Label
+                          htmlFor={`event-${eventType}`}
+                          className={`text-sm font-normal ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                        >
+                          {eventType}
+                        </Label>
+                      </div>
+                    );
+                  })}
                 </div>
                 {selectedEvents.length > 0 && (
                   <p className="text-xs text-muted-foreground">
