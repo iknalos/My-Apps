@@ -1,14 +1,35 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertPlayerSchema, insertSessionSchema, insertRegistrationSchema, insertUserSchema } from "@shared/schema";
 import bcrypt from "bcrypt";
 
+// Authorization middleware
+async function requireAuth(req: Request, res: Response, next: NextFunction) {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: "Not authenticated" });
+  }
+  next();
+}
+
+async function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: "Not authenticated" });
+  }
+  
+  const user = await storage.getUser(req.session.userId);
+  if (!user || user.role !== 'admin') {
+    return res.status(403).json({ error: "Admin access required" });
+  }
+  
+  next();
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes
   app.post("/api/auth/register", async (req, res) => {
     try {
-      const { username, password } = insertUserSchema.parse(req.body);
+      const { username, password, role } = insertUserSchema.parse(req.body);
       
       const existingUser = await storage.getUserByUsername(username);
       if (existingUser) {
@@ -16,11 +37,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const hashedPassword = await bcrypt.hash(password, 10);
-      const user = await storage.createUser({ username, password: hashedPassword });
+      const user = await storage.createUser({ username, password: hashedPassword, role: role || 'player' });
       
       req.session.userId = user.id;
       
-      res.status(201).json({ id: user.id, username: user.username });
+      res.status(201).json({ id: user.id, username: user.username, role: user.role });
     } catch (error) {
       console.error("Registration error:", error);
       res.status(400).json({ error: "Failed to register user" });
@@ -43,7 +64,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       req.session.userId = user.id;
       
-      res.json({ id: user.id, username: user.username });
+      res.json({ id: user.id, username: user.username, role: user.role });
     } catch (error) {
       console.error("Login error:", error);
       res.status(500).json({ error: "Failed to log in" });
@@ -70,7 +91,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "User not found" });
       }
       
-      res.json({ id: user.id, username: user.username });
+      const player = await storage.getPlayerByUserId(user.id);
+      
+      res.json({ id: user.id, username: user.username, role: user.role, playerId: player?.id });
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch user" });
     }
@@ -116,7 +139,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/players", async (req, res) => {
+  // Player profile creation (for player users)
+  app.post("/api/players/profile", requireAuth, async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(401).json({ error: "User not found" });
+      }
+
+      // Check if player already has a profile
+      const existingPlayer = await storage.getPlayerByUserId(user.id);
+      if (existingPlayer) {
+        return res.status(400).json({ error: "Profile already exists" });
+      }
+
+      const validatedData = insertPlayerSchema.parse({ ...req.body, userId: user.id });
+      const player = await storage.createPlayer(validatedData);
+      res.status(201).json(player);
+    } catch (error) {
+      console.error("Player profile creation error:", error);
+      res.status(400).json({ error: "Invalid player data" });
+    }
+  });
+
+  // Player profile update (for player users - limited to name/gender)
+  app.patch("/api/players/profile", requireAuth, async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(401).json({ error: "User not found" });
+      }
+
+      const player = await storage.getPlayerByUserId(user.id);
+      if (!player) {
+        return res.status(404).json({ error: "Profile not found" });
+      }
+
+      // Players can only update name and gender, not ratings
+      const { name, gender } = req.body;
+      const updates: any = {};
+      if (name !== undefined) updates.name = name;
+      if (gender !== undefined) updates.gender = gender;
+
+      const updatedPlayer = await storage.updatePlayer(player.id, updates);
+      res.json(updatedPlayer);
+    } catch (error) {
+      res.status(400).json({ error: "Failed to update profile" });
+    }
+  });
+
+  // Admin-only player routes
+  app.post("/api/players", requireAdmin, async (req, res) => {
     try {
       const validatedData = insertPlayerSchema.parse(req.body);
       const player = await storage.createPlayer(validatedData);
@@ -127,7 +208,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/players/:id", async (req, res) => {
+  app.patch("/api/players/:id", requireAdmin, async (req, res) => {
     try {
       const player = await storage.updatePlayer(req.params.id, req.body);
       if (!player) {
@@ -139,7 +220,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/players/:id", async (req, res) => {
+  app.delete("/api/players/:id", requireAdmin, async (req, res) => {
     try {
       const deleted = await storage.deletePlayer(req.params.id);
       if (!deleted) {
@@ -173,7 +254,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/sessions", async (req, res) => {
+  app.post("/api/sessions", requireAdmin, async (req, res) => {
     try {
       // Convert date string to Date object
       const sessionData = {
@@ -190,7 +271,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/sessions/:id", async (req, res) => {
+  app.patch("/api/sessions/:id", requireAdmin, async (req, res) => {
     try {
       // Convert date string to Date object if present
       const updates = req.body.date
@@ -207,7 +288,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/sessions/:id", async (req, res) => {
+  app.delete("/api/sessions/:id", requireAdmin, async (req, res) => {
     try {
       const deleted = await storage.deleteSession(req.params.id);
       if (!deleted) {
@@ -265,7 +346,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/registrations/:id", async (req, res) => {
+  app.delete("/api/registrations/:id", requireAdmin, async (req, res) => {
     try {
       const deleted = await storage.deleteRegistration(req.params.id);
       if (!deleted) {
@@ -278,7 +359,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Draw generation routes
-  app.post("/api/sessions/:sessionId/draws", async (req, res) => {
+  app.post("/api/sessions/:sessionId/draws", requireAdmin, async (req, res) => {
     try {
       const session = await storage.getSession(req.params.sessionId);
       if (!session) {
@@ -327,7 +408,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/matches/:id", async (req, res) => {
+  app.patch("/api/matches/:id", requireAdmin, async (req, res) => {
     try {
       const { team1Set1, team1Set2, team1Set3, team2Set1, team2Set2, team2Set3, status } = req.body;
       
