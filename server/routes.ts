@@ -159,8 +159,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // SECURITY: Force userId to be the authenticated user's ID, ignore any client-supplied userId
       const { userId: _, ...bodyData } = req.body;
-      const validatedData = insertPlayerSchema.parse({ ...bodyData, userId: user.id });
-      const player = await storage.createPlayer(validatedData);
+      const validatedData = insertPlayerSchema.parse(bodyData);
+      const playerData = { ...validatedData, userId: user.id };
+      const player = await storage.createPlayer(playerData);
       res.status(201).json(player);
     } catch (error) {
       console.error("Player profile creation error:", error);
