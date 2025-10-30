@@ -1,7 +1,7 @@
 import { type User, type InsertUser, type Player, type InsertPlayer, type Session, type InsertSession, type Registration, type InsertRegistration, type Match, type InsertMatch, users, players, sessions, registrations, matches } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -282,8 +282,10 @@ export class DatabaseStorage implements IStorage {
 
   async getRegistrationByPlayerAndSession(playerId: string, sessionId: string): Promise<Registration | undefined> {
     const [registration] = await db.select().from(registrations)
-      .where(eq(registrations.playerId, playerId))
-      .where(eq(registrations.sessionId, sessionId));
+      .where(and(
+        eq(registrations.playerId, playerId),
+        eq(registrations.sessionId, sessionId)
+      ));
     return registration || undefined;
   }
 
