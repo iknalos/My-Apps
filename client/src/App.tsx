@@ -1,4 +1,4 @@
-import { Switch, Route, useLocation } from "wouter";
+import { Switch, Route, useLocation, Redirect } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -13,6 +13,8 @@ import Players from "@/pages/Players";
 import PlayerProfile from "@/pages/PlayerProfile";
 import Sessions from "@/pages/Sessions";
 import SessionDetail from "@/pages/SessionDetail";
+import CreatePlayerProfile from "@/pages/CreatePlayerProfile";
+import PlayerDashboard from "@/pages/PlayerDashboard";
 import NotFound from "@/pages/not-found";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { Trophy, LogOut } from "lucide-react";
@@ -39,7 +41,7 @@ function AuthRouter() {
   );
 }
 
-function AppRouter() {
+function AdminRouter() {
   return (
     <Switch>
       <Route path="/" component={Dashboard} />
@@ -52,8 +54,23 @@ function AppRouter() {
   );
 }
 
+function PlayerRouter() {
+  const { user } = useAuth();
+  
+  if (!user?.playerId) {
+    return <CreatePlayerProfile />;
+  }
+
+  return (
+    <Switch>
+      <Route path="/" component={PlayerDashboard} />
+      <Route component={NotFound} />
+    </Switch>
+  );
+}
+
 function AuthenticatedApp() {
-  const { user, setUser } = useAuth();
+  const { user, isAdmin, setUser } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
@@ -80,6 +97,46 @@ function AuthenticatedApp() {
     "--sidebar-width": "16rem",
   };
 
+  // Player users without a profile should see the profile creation page directly
+  if (!isAdmin && !user?.playerId) {
+    return <CreatePlayerProfile />;
+  }
+
+  // Player users with a profile should see a simplified layout
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen">
+        <header className="border-b bg-background">
+          <div className="container mx-auto flex items-center justify-between p-4">
+            <div className="flex items-center gap-2">
+              <Trophy className="h-6 w-6 text-primary" />
+              <span className="text-xl font-bold">Michaels Mixer</span>
+            </div>
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-muted-foreground" data-testid="text-username">
+                {user?.username}
+              </span>
+              <ThemeToggle />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => logoutMutation.mutate()}
+                disabled={logoutMutation.isPending}
+                data-testid="button-logout"
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </header>
+        <main className="container mx-auto p-6">
+          <PlayerRouter />
+        </main>
+      </div>
+    );
+  }
+
+  // Admin users get the full sidebar layout
   return (
     <SidebarProvider style={style as React.CSSProperties}>
       <div className="flex h-screen w-full">
@@ -110,7 +167,7 @@ function AuthenticatedApp() {
             </div>
           </header>
           <main className="flex-1 overflow-auto p-6">
-            <AppRouter />
+            <AdminRouter />
           </main>
         </div>
       </div>
