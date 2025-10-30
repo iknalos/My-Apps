@@ -10,6 +10,7 @@ export interface IStorage {
   
   getAllPlayers(): Promise<Player[]>;
   getPlayer(id: string): Promise<Player | undefined>;
+  getPlayerByUserId(userId: string): Promise<Player | undefined>;
   createPlayer(player: InsertPlayer): Promise<Player>;
   updatePlayer(id: string, player: Partial<InsertPlayer>): Promise<Player | undefined>;
   deletePlayer(id: string): Promise<boolean>;
@@ -67,7 +68,12 @@ export class MemStorage implements IStorage {
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = randomUUID();
-    const user: User = { ...insertUser, id };
+    const user: User = { 
+      id,
+      username: insertUser.username,
+      password: insertUser.password,
+      role: insertUser.role || 'player'
+    };
     this.users.set(id, user);
     return user;
   }
@@ -80,10 +86,15 @@ export class MemStorage implements IStorage {
     return this.players.get(id);
   }
 
+  async getPlayerByUserId(userId: string): Promise<Player | undefined> {
+    return Array.from(this.players.values()).find(p => p.userId === userId);
+  }
+
   async createPlayer(insertPlayer: InsertPlayer): Promise<Player> {
     const id = randomUUID();
     const player: Player = {
       id,
+      userId: insertPlayer.userId ?? null,
       name: insertPlayer.name,
       gender: insertPlayer.gender,
       club: insertPlayer.club ?? null,
@@ -305,6 +316,11 @@ export class DatabaseStorage implements IStorage {
 
   async getPlayer(id: string): Promise<Player | undefined> {
     const [player] = await db.select().from(players).where(eq(players.id, id));
+    return player || undefined;
+  }
+
+  async getPlayerByUserId(userId: string): Promise<Player | undefined> {
+    const [player] = await db.select().from(players).where(eq(players.userId, userId));
     return player || undefined;
   }
 
