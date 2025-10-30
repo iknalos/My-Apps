@@ -241,6 +241,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { team1Set1, team1Set2, team1Set3, team2Set1, team2Set2, team2Set3, status } = req.body;
       
+      // Get the existing match to check if it was already completed
+      const existingMatch = await storage.updateMatch(req.params.id, {});
+      if (!existingMatch) {
+        return res.status(404).json({ error: "Match not found" });
+      }
+      
+      const wasCompleted = existingMatch.status === "completed";
+      
       const updates = {
         team1Set1: team1Set1 ?? undefined,
         team1Set2: team1Set2 ?? undefined,
@@ -255,6 +263,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!match) {
         return res.status(404).json({ error: "Match not found" });
       }
+      
+      // Trigger rating updates if match is completed and has scores
+      // Also recalculate if match was already completed and scores changed (editing scores)
+      const isCompleted = match.status === "completed";
+      const hasScores = match.team1Set1 !== null && match.team2Set1 !== null;
+      
+      if (isCompleted && hasScores) {
+        try {
+          const { applyMatchRatingChanges } = await import("./ratingSystem");
+          await applyMatchRatingChanges(match.id);
+        } catch (ratingError) {
+          console.error("Rating update error:", ratingError);
+          // Don't fail the entire request if rating update fails
+        }
+      }
+      
       res.json(match);
     } catch (error) {
       console.error("Match update error:", error);

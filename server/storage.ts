@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type Player, type InsertPlayer, type Session, type InsertSession, type Registration, type InsertRegistration, type Match, type InsertMatch, users, players, sessions, registrations, matches } from "@shared/schema";
+import { type User, type InsertUser, type Player, type InsertPlayer, type Session, type InsertSession, type Registration, type InsertRegistration, type Match, type InsertMatch, type RatingHistory, type InsertRatingHistory, users, players, sessions, registrations, matches, ratingHistories } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
 import { eq, desc, and } from "drizzle-orm";
@@ -29,6 +29,9 @@ export interface IStorage {
   createMatch(match: InsertMatch): Promise<Match>;
   updateMatch(id: string, match: Partial<InsertMatch>): Promise<Match | undefined>;
   deleteMatchesBySession(sessionId: string): Promise<number>;
+
+  getRatingHistoriesByPlayer(playerId: string): Promise<RatingHistory[]>;
+  createRatingHistory(ratingHistory: InsertRatingHistory): Promise<RatingHistory>;
 }
 
 export class MemStorage implements IStorage {
@@ -37,6 +40,7 @@ export class MemStorage implements IStorage {
   private sessions: Map<string, Session>;
   private registrations: Map<string, Registration>;
   private matches: Map<string, Match>;
+  private ratingHistories: Map<string, RatingHistory>;
 
   constructor() {
     this.users = new Map();
@@ -44,6 +48,7 @@ export class MemStorage implements IStorage {
     this.sessions = new Map();
     this.registrations = new Map();
     this.matches = new Map();
+    this.ratingHistories = new Map();
   }
 
   async getUser(id: string): Promise<User | undefined> {
@@ -183,6 +188,7 @@ export class MemStorage implements IStorage {
     const match: Match = {
       id,
       sessionId: insertMatch.sessionId,
+      eventType: insertMatch.eventType || "singles",
       courtNumber: insertMatch.courtNumber,
       roundNumber: insertMatch.roundNumber,
       team1Player1Id: insertMatch.team1Player1Id,
@@ -217,6 +223,31 @@ export class MemStorage implements IStorage {
       this.matches.delete(match.id);
     }
     return matchesToDelete.length;
+  }
+
+  async getRatingHistoriesByPlayer(playerId: string): Promise<RatingHistory[]> {
+    return Array.from(this.ratingHistories.values())
+      .filter(h => h.playerId === playerId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
+  async createRatingHistory(insertRatingHistory: InsertRatingHistory): Promise<RatingHistory> {
+    const id = randomUUID();
+    const ratingHistory: RatingHistory = {
+      id,
+      playerId: insertRatingHistory.playerId,
+      eventType: insertRatingHistory.eventType,
+      oldRating: insertRatingHistory.oldRating,
+      newRating: insertRatingHistory.newRating,
+      ratingChange: insertRatingHistory.ratingChange,
+      matchId: insertRatingHistory.matchId,
+      opponentIds: insertRatingHistory.opponentIds,
+      result: insertRatingHistory.result,
+      expectedOutcome: insertRatingHistory.expectedOutcome,
+      createdAt: new Date(),
+    };
+    this.ratingHistories.set(id, ratingHistory);
+    return ratingHistory;
   }
 }
 
@@ -327,6 +358,17 @@ export class DatabaseStorage implements IStorage {
   async deleteMatchesBySession(sessionId: string): Promise<number> {
     const deleted = await db.delete(matches).where(eq(matches.sessionId, sessionId)).returning();
     return deleted.length;
+  }
+
+  async getRatingHistoriesByPlayer(playerId: string): Promise<RatingHistory[]> {
+    return await db.select().from(ratingHistories)
+      .where(eq(ratingHistories.playerId, playerId))
+      .orderBy(desc(ratingHistories.createdAt));
+  }
+
+  async createRatingHistory(insertRatingHistory: InsertRatingHistory): Promise<RatingHistory> {
+    const [ratingHistory] = await db.insert(ratingHistories).values(insertRatingHistory).returning();
+    return ratingHistory;
   }
 }
 

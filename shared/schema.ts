@@ -104,3 +104,25 @@ export const insertMatchSchema = createInsertSchema(matches).omit({
 
 export type InsertMatch = z.infer<typeof insertMatchSchema>;
 export type Match = typeof matches.$inferSelect;
+
+export const ratingHistories = pgTable("rating_histories", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  playerId: varchar("player_id").notNull(),
+  eventType: text("event_type").notNull(),
+  oldRating: integer("old_rating").notNull(),
+  newRating: integer("new_rating").notNull(),
+  ratingChange: integer("rating_change").notNull(),
+  matchId: varchar("match_id").notNull(),
+  opponentIds: text("opponent_ids").array().notNull(),
+  result: text("result").notNull(), // "win", "loss"
+  expectedOutcome: text("expected_outcome").notNull(), // "win", "loss", "even"
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertRatingHistorySchema = createInsertSchema(ratingHistories).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertRatingHistory = z.infer<typeof insertRatingHistorySchema>;
+export type RatingHistory = typeof ratingHistories.$inferSelect;
