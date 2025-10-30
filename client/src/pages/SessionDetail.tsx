@@ -47,6 +47,17 @@ export default function SessionDetail() {
 
   // Convert API matches to MatchCard format
   const formatMatchForCard = (match: Match) => {
+    // Calculate total sets won for each team
+    const team1SetsWon = [match.team1Set1, match.team1Set2, match.team1Set3].filter((s, i) => {
+      const team2Set = [match.team2Set1, match.team2Set2, match.team2Set3][i];
+      return s != null && team2Set != null && s > team2Set;
+    }).length;
+    
+    const team2SetsWon = [match.team2Set1, match.team2Set2, match.team2Set3].filter((s, i) => {
+      const team1Set = [match.team1Set1, match.team1Set2, match.team1Set3][i];
+      return s != null && team1Set != null && s > team1Set;
+    }).length;
+    
     return {
       id: match.id,
       courtNumber: match.courtNumber,
@@ -54,12 +65,12 @@ export default function SessionDetail() {
       team1: {
         player1: getPlayerName(match.team1Player1Id),
         player2: match.team1Player2Id ? getPlayerName(match.team1Player2Id) : undefined,
-        score: match.team1Score || undefined,
+        score: team1SetsWon > 0 ? team1SetsWon : undefined,
       },
       team2: {
         player1: getPlayerName(match.team2Player1Id),
         player2: match.team2Player2Id ? getPlayerName(match.team2Player2Id) : undefined,
-        score: match.team2Score || undefined,
+        score: team2SetsWon > 0 ? team2SetsWon : undefined,
       },
       status: match.status as "scheduled" | "in-progress" | "completed",
       skillBalance: 0, // Can calculate this if needed

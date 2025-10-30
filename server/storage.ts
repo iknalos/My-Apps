@@ -1,5 +1,7 @@
-import { type User, type InsertUser, type Player, type InsertPlayer, type Session, type InsertSession, type Registration, type InsertRegistration, type Match, type InsertMatch } from "@shared/schema";
+import { type User, type InsertUser, type Player, type InsertPlayer, type Session, type InsertSession, type Registration, type InsertRegistration, type Match, type InsertMatch, users, players, sessions, registrations, matches } from "@shared/schema";
 import { randomUUID } from "crypto";
+import { db } from "./db";
+import { eq, desc } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -186,8 +188,12 @@ export class MemStorage implements IStorage {
       team1Player2Id: insertMatch.team1Player2Id ?? null,
       team2Player1Id: insertMatch.team2Player1Id,
       team2Player2Id: insertMatch.team2Player2Id ?? null,
-      team1Score: insertMatch.team1Score ?? null,
-      team2Score: insertMatch.team2Score ?? null,
+      team1Set1: insertMatch.team1Set1 ?? null,
+      team1Set2: insertMatch.team1Set2 ?? null,
+      team1Set3: insertMatch.team1Set3 ?? null,
+      team2Set1: insertMatch.team2Set1 ?? null,
+      team2Set2: insertMatch.team2Set2 ?? null,
+      team2Set3: insertMatch.team2Set3 ?? null,
       status: insertMatch.status,
       createdAt: new Date(),
     };
@@ -205,4 +211,107 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// DatabaseStorage implementation using Drizzle ORM
+export class DatabaseStorage implements IStorage {
+  async getUser(id: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db.insert(users).values(insertUser).returning();
+    return user;
+  }
+
+  async getAllPlayers(): Promise<Player[]> {
+    return await db.select().from(players);
+  }
+
+  async getPlayer(id: string): Promise<Player | undefined> {
+    const [player] = await db.select().from(players).where(eq(players.id, id));
+    return player || undefined;
+  }
+
+  async createPlayer(insertPlayer: InsertPlayer): Promise<Player> {
+    const [player] = await db.insert(players).values(insertPlayer).returning();
+    return player;
+  }
+
+  async updatePlayer(id: string, updates: Partial<InsertPlayer>): Promise<Player | undefined> {
+    const [player] = await db.update(players).set(updates).where(eq(players.id, id)).returning();
+    return player || undefined;
+  }
+
+  async deletePlayer(id: string): Promise<boolean> {
+    const result = await db.delete(players).where(eq(players.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  async getAllSessions(): Promise<Session[]> {
+    return await db.select().from(sessions).orderBy(desc(sessions.date));
+  }
+
+  async getSession(id: string): Promise<Session | undefined> {
+    const [session] = await db.select().from(sessions).where(eq(sessions.id, id));
+    return session || undefined;
+  }
+
+  async createSession(insertSession: InsertSession): Promise<Session> {
+    const [session] = await db.insert(sessions).values(insertSession).returning();
+    return session;
+  }
+
+  async updateSession(id: string, updates: Partial<InsertSession>): Promise<Session | undefined> {
+    const [session] = await db.update(sessions).set(updates).where(eq(sessions.id, id)).returning();
+    return session || undefined;
+  }
+
+  async deleteSession(id: string): Promise<boolean> {
+    const result = await db.delete(sessions).where(eq(sessions.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  async getRegistrationsBySession(sessionId: string): Promise<Registration[]> {
+    return await db.select().from(registrations).where(eq(registrations.sessionId, sessionId));
+  }
+
+  async getRegistrationByPlayerAndSession(playerId: string, sessionId: string): Promise<Registration | undefined> {
+    const [registration] = await db.select().from(registrations)
+      .where(eq(registrations.playerId, playerId))
+      .where(eq(registrations.sessionId, sessionId));
+    return registration || undefined;
+  }
+
+  async createRegistration(insertRegistration: InsertRegistration): Promise<Registration> {
+    const [registration] = await db.insert(registrations).values(insertRegistration).returning();
+    return registration;
+  }
+
+  async deleteRegistration(id: string): Promise<boolean> {
+    const result = await db.delete(registrations).where(eq(registrations.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  async getMatchesBySession(sessionId: string): Promise<Match[]> {
+    return await db.select().from(matches)
+      .where(eq(matches.sessionId, sessionId))
+      .orderBy(matches.roundNumber, matches.courtNumber);
+  }
+
+  async createMatch(insertMatch: InsertMatch): Promise<Match> {
+    const [match] = await db.insert(matches).values(insertMatch).returning();
+    return match;
+  }
+
+  async updateMatch(id: string, updates: Partial<InsertMatch>): Promise<Match | undefined> {
+    const [match] = await db.update(matches).set(updates).where(eq(matches.id, id)).returning();
+    return match || undefined;
+  }
+}
+
+export const storage = new DatabaseStorage();
