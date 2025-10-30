@@ -13,6 +13,7 @@ interface Team {
 interface MatchCardProps {
   courtNumber: number;
   roundNumber: number;
+  eventType?: string;
   team1: Team;
   team2: Team;
   status: "scheduled" | "in-progress" | "completed";
@@ -23,6 +24,7 @@ interface MatchCardProps {
 export default function MatchCard({
   courtNumber,
   roundNumber,
+  eventType,
   team1,
   team2,
   status,
@@ -42,13 +44,30 @@ export default function MatchCard({
       ? "text-amber-600 dark:text-amber-400"
       : "text-red-600 dark:text-red-400";
 
+  // Get event type label (XD, MD, WD, Singles)
+  const getEventLabel = (type?: string) => {
+    if (!type) return null;
+    if (type === "mixedDoubles") return "XD";
+    if (type === "mensDoubles") return "MD";
+    if (type === "womensDoubles") return "WD";
+    if (type === "singles") return "Singles";
+    return type;
+  };
+
+  const eventLabel = getEventLabel(eventType);
+
   return (
     <Card className="hover-elevate">
       <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pb-3">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Badge variant="outline" className="font-semibold">
             Court {courtNumber}
           </Badge>
+          {eventLabel && (
+            <Badge variant="secondary" className="font-semibold">
+              {eventLabel}
+            </Badge>
+          )}
           <span className="text-sm text-muted-foreground">Round {roundNumber}</span>
         </div>
         <Badge className={statusColors[status]}>{status}</Badge>

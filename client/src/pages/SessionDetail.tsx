@@ -116,6 +116,7 @@ export default function SessionDetail() {
       id: match.id,
       courtNumber: match.courtNumber,
       roundNumber: match.roundNumber,
+      eventType: match.eventType,
       team1: {
         player1: getPlayerName(match.team1Player1Id),
         player2: match.team1Player2Id ? getPlayerName(match.team1Player2Id) : undefined,

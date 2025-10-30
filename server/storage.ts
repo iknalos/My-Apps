@@ -28,6 +28,7 @@ export interface IStorage {
   getMatchesBySession(sessionId: string): Promise<Match[]>;
   createMatch(match: InsertMatch): Promise<Match>;
   updateMatch(id: string, match: Partial<InsertMatch>): Promise<Match | undefined>;
+  deleteMatchesBySession(sessionId: string): Promise<number>;
 }
 
 export class MemStorage implements IStorage {
@@ -209,6 +210,14 @@ export class MemStorage implements IStorage {
     this.matches.set(id, updatedMatch);
     return updatedMatch;
   }
+
+  async deleteMatchesBySession(sessionId: string): Promise<number> {
+    const matchesToDelete = Array.from(this.matches.values()).filter(m => m.sessionId === sessionId);
+    for (const match of matchesToDelete) {
+      this.matches.delete(match.id);
+    }
+    return matchesToDelete.length;
+  }
 }
 
 // DatabaseStorage implementation using Drizzle ORM
@@ -313,6 +322,11 @@ export class DatabaseStorage implements IStorage {
   async updateMatch(id: string, updates: Partial<InsertMatch>): Promise<Match | undefined> {
     const [match] = await db.update(matches).set(updates).where(eq(matches.id, id)).returning();
     return match || undefined;
+  }
+
+  async deleteMatchesBySession(sessionId: string): Promise<number> {
+    const deleted = await db.delete(matches).where(eq(matches.sessionId, sessionId)).returning();
+    return deleted.length;
   }
 }
 

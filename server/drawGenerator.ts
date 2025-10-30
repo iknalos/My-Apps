@@ -118,14 +118,13 @@ function createSinglesRoundMatches(
   for (const pairing of pairings) {
     matches.push({
       sessionId,
+      eventType,
       courtNumber: 0,
       roundNumber,
       team1Player1Id: pairing[0].id,
       team1Player2Id: null,
       team2Player1Id: pairing[1].id,
       team2Player2Id: null,
-      team1Score: null,
-      team2Score: null,
       status: "scheduled",
     });
   }
@@ -319,14 +318,13 @@ function createDoublesRoundMatches(
       // Mixed doubles partnerships have male/female properties
       matches.push({
         sessionId,
+        eventType,
         courtNumber: 0,
         roundNumber,
         team1Player1Id: rotatedPartnerships[i].male.id,
         team1Player2Id: rotatedPartnerships[i].female.id,
         team2Player1Id: rotatedPartnerships[i + 1].male.id,
         team2Player2Id: rotatedPartnerships[i + 1].female.id,
-        team1Score: null,
-        team2Score: null,
         status: "scheduled",
       });
     } else {
@@ -336,14 +334,13 @@ function createDoublesRoundMatches(
       
       matches.push({
         sessionId,
+        eventType,
         courtNumber: 0,
         roundNumber,
         team1Player1Id: team1[0].id,
         team1Player2Id: team1[1].id,
         team2Player1Id: team2[0].id,
         team2Player2Id: team2[1].id,
-        team1Score: null,
-        team2Score: null,
         status: "scheduled",
       });
     }
@@ -537,14 +534,13 @@ function createMixerMatches(
       
       matches.push({
         sessionId,
+        eventType,
         courtNumber: 0,
         roundNumber,
         team1Player1Id: team1.p1.id,
         team1Player2Id: team1.p2.id,
         team2Player1Id: team2.p1.id,
         team2Player2Id: team2.p2.id,
-        team1Score: null,
-        team2Score: null,
         status: "scheduled",
       });
       

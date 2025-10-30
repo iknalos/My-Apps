@@ -200,6 +200,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "No registered players" });
       }
 
+      // DELETE OLD MATCHES - Clear any existing draws for this session
+      const deletedCount = await storage.deleteMatchesBySession(req.params.sessionId);
+      console.log(`Deleted ${deletedCount} existing matches for session ${req.params.sessionId}`);
+
       // Get all players
       const players = await storage.getAllPlayers();
       const playerMap = new Map(players.map(p => [p.id, p]));

@@ -80,6 +80,7 @@ export type Registration = typeof registrations.$inferSelect;
 export const matches = pgTable("matches", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   sessionId: varchar("session_id").notNull(),
+  eventType: text("event_type").notNull().default('singles'),
   courtNumber: integer("court_number").notNull(),
   roundNumber: integer("round_number").notNull(),
   team1Player1Id: varchar("team1_player1_id").notNull(),
