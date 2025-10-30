@@ -110,6 +110,10 @@ export default function SessionDetail() {
     const team1IsWinner = team1SetsWon >= 2;
     const team2IsWinner = team2SetsWon >= 2;
     
+    // Check if match has been scored (has at least set 1 and 2 scores)
+    const isMatchScored = match.team1Set1 !== null && match.team2Set1 !== null && 
+                          match.team1Set2 !== null && match.team2Set2 !== null;
+    
     // Format set scores for display (e.g., "21-19, 21-18")
     const formatSetScores = (team1Sets: (number | null)[], team2Sets: (number | null)[]) => {
       const scores: string[] = [];
@@ -133,14 +137,14 @@ export default function SessionDetail() {
       team1: {
         player1: getPlayerName(match.team1Player1Id),
         player2: match.team1Player2Id ? getPlayerName(match.team1Player2Id) : undefined,
-        score: team1SetsWon > 0 ? team1SetsWon : undefined,
+        score: isMatchScored ? team1SetsWon : undefined,
         isWinner: team1IsWinner,
         setScores: setScores,
       },
       team2: {
         player1: getPlayerName(match.team2Player1Id),
         player2: match.team2Player2Id ? getPlayerName(match.team2Player2Id) : undefined,
-        score: team2SetsWon > 0 ? team2SetsWon : undefined,
+        score: isMatchScored ? team2SetsWon : undefined,
         isWinner: team2IsWinner,
         setScores: setScores,
       },
