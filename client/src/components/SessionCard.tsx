@@ -1,10 +1,12 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Users, Activity, Edit, Play } from "lucide-react";
 import { format } from "date-fns";
 import JoinSessionDialog from "./JoinSessionDialog";
+import { useToast } from "@/hooks/use-toast";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { Session, Registration } from "@shared/schema";
 
 interface SessionCardProps {
@@ -18,8 +20,31 @@ export default function SessionCard({
   onViewDetails,
   onEdit,
 }: SessionCardProps) {
+  const { toast } = useToast();
+  
   const { data: registrations = [] } = useQuery<Registration[]>({
     queryKey: ["/api/sessions", session.id, "registrations"],
+  });
+
+  const createDrawsMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", `/api/sessions/${session.id}/draws`);
+      return await response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/sessions", session.id, "matches"] });
+      toast({
+        title: "Success",
+        description: `Generated ${data.matchCount} matches across ${session.numberOfRounds} rounds`,
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to generate draws",
+        variant: "destructive",
+      });
+    },
   });
 
   const registeredCount = registrations.length;
@@ -87,10 +112,12 @@ export default function SessionCard({
             <Button
               className="w-full"
               variant="default"
+              onClick={() => createDrawsMutation.mutate()}
+              disabled={createDrawsMutation.isPending}
               data-testid="button-create-draws"
             >
               <Play className="h-4 w-4 mr-2" />
-              Create Draws
+              {createDrawsMutation.isPending ? "Generating..." : "Create Draws"}
             </Button>
           )}
           {onViewDetails && (

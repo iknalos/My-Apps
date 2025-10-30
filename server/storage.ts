@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type Player, type InsertPlayer, type Session, type InsertSession, type Registration, type InsertRegistration } from "@shared/schema";
+import { type User, type InsertUser, type Player, type InsertPlayer, type Session, type InsertSession, type Registration, type InsertRegistration, type Match, type InsertMatch } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -22,6 +22,10 @@ export interface IStorage {
   getRegistrationByPlayerAndSession(playerId: string, sessionId: string): Promise<Registration | undefined>;
   createRegistration(registration: InsertRegistration): Promise<Registration>;
   deleteRegistration(id: string): Promise<boolean>;
+
+  getMatchesBySession(sessionId: string): Promise<Match[]>;
+  createMatch(match: InsertMatch): Promise<Match>;
+  updateMatch(id: string, match: Partial<InsertMatch>): Promise<Match | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -29,12 +33,14 @@ export class MemStorage implements IStorage {
   private players: Map<string, Player>;
   private sessions: Map<string, Session>;
   private registrations: Map<string, Registration>;
+  private matches: Map<string, Match>;
 
   constructor() {
     this.users = new Map();
     this.players = new Map();
     this.sessions = new Map();
     this.registrations = new Map();
+    this.matches = new Map();
   }
 
   async getUser(id: string): Promise<User | undefined> {
@@ -111,6 +117,7 @@ export class MemStorage implements IStorage {
       sessionTypes: insertSession.sessionTypes,
       capacity: insertSession.capacity,
       courtsAvailable: insertSession.courtsAvailable,
+      numberOfRounds: insertSession.numberOfRounds,
       maxSkillGap: insertSession.maxSkillGap ?? null,
       minGamesPerPlayer: insertSession.minGamesPerPlayer ?? null,
       status: insertSession.status,
@@ -160,6 +167,41 @@ export class MemStorage implements IStorage {
 
   async deleteRegistration(id: string): Promise<boolean> {
     return this.registrations.delete(id);
+  }
+
+  async getMatchesBySession(sessionId: string): Promise<Match[]> {
+    return Array.from(this.matches.values()).filter(
+      (match) => match.sessionId === sessionId
+    ).sort((a, b) => a.roundNumber - b.roundNumber || a.courtNumber - b.courtNumber);
+  }
+
+  async createMatch(insertMatch: InsertMatch): Promise<Match> {
+    const id = randomUUID();
+    const match: Match = {
+      id,
+      sessionId: insertMatch.sessionId,
+      courtNumber: insertMatch.courtNumber,
+      roundNumber: insertMatch.roundNumber,
+      team1Player1Id: insertMatch.team1Player1Id,
+      team1Player2Id: insertMatch.team1Player2Id ?? null,
+      team2Player1Id: insertMatch.team2Player1Id,
+      team2Player2Id: insertMatch.team2Player2Id ?? null,
+      team1Score: insertMatch.team1Score ?? null,
+      team2Score: insertMatch.team2Score ?? null,
+      status: insertMatch.status,
+      createdAt: new Date(),
+    };
+    this.matches.set(id, match);
+    return match;
+  }
+
+  async updateMatch(id: string, updates: Partial<InsertMatch>): Promise<Match | undefined> {
+    const match = this.matches.get(id);
+    if (!match) return undefined;
+    
+    const updatedMatch = { ...match, ...updates };
+    this.matches.set(id, updatedMatch);
+    return updatedMatch;
   }
 }
 

@@ -187,6 +187,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Draw generation routes
+  app.post("/api/sessions/:sessionId/draws", async (req, res) => {
+    try {
+      const session = await storage.getSession(req.params.sessionId);
+      if (!session) {
+        return res.status(404).json({ error: "Session not found" });
+      }
+
+      const registrations = await storage.getRegistrationsBySession(req.params.sessionId);
+      if (registrations.length === 0) {
+        return res.status(400).json({ error: "No registered players" });
+      }
+
+      // Get all players
+      const players = await storage.getAllPlayers();
+      const playerMap = new Map(players.map(p => [p.id, p]));
+
+      // Import draw generation logic
+      const { generateDraws } = await import("./drawGenerator");
+      const matches = generateDraws(session, registrations, playerMap);
+
+      // Save matches to storage
+      for (const match of matches) {
+        await storage.createMatch(match);
+      }
+
+      res.status(201).json({ 
+        message: "Draws generated successfully",
+        matchCount: matches.length,
+        matches
+      });
+    } catch (error) {
+      console.error("Draw generation error:", error);
+      res.status(500).json({ error: "Failed to generate draws" });
+    }
+  });
+
+  app.get("/api/sessions/:sessionId/matches", async (req, res) => {
+    try {
+      const matches = await storage.getMatchesBySession(req.params.sessionId);
+      res.json(matches);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch matches" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
