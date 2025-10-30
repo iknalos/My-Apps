@@ -133,16 +133,31 @@ Preferred communication style: Simple, everyday language.
   - Bye rotation for odd counts: `byeIndex = (round - 1) % playerCount`
   - Each round produces different opponent pairings for variety
   
-- **Doubles/Mixed Pairing:**
-  - **Partnership Formation (once at start):**
-    - Men's/Women's Doubles: Snake draft pairs high+low ratings for balance
-    - Mixed Doubles: Males paired with females of similar relative skill rank
-    - Partnerships sorted by total rating (sum of both players)
-  - **Round-Robin Matching:**
-    - Circle method applied to partnerships (fix first, rotate others)
-    - Adjacent partnerships matched after rotation for reasonable balance
-    - Bye rotation for odd partnership counts: `byeIndex = (round - 1) % partnershipCount`
-    - Partnerships remain stable across all rounds
+- **Doubles/Mixed Pairing (MIXER FORMAT - Partnerships Rotate Each Round):**
+  - **NEW: Mixer-Style Partnership Rotation:**
+    - Partnerships are created FRESH each round (not fixed for all rounds)
+    - History tracking prevents partner/opponent repeats when possible
+    - Seeded shuffle ensures variety across rounds
+    
+  - **Per-Round Partnership Formation:**
+    - **Mixed Doubles:** 
+      - Males and females shuffled independently each round
+      - Algorithm pairs males with females they haven't partnered before
+      - Falls back to least-repeated partners when necessary
+    - **Men's/Women's Doubles:**
+      - All players shuffled each round with seeded randomness
+      - Greedy matching prioritizes new partnerships
+      - Avoids previous partners when possible
+    
+  - **Opponent Matching:**
+    - Teams sorted by total rating for balanced matches
+    - Algorithm prefers opponents not faced in previous rounds
+    - Falls back to any available opponent when needed
+    
+  - **History Tracking:**
+    - Partner history: Map of playerId → Set of previous partner IDs
+    - Opponent history: Map of playerId → Set of previous opponent IDs
+    - Updated after each round for future round generation
     
 - **Court Assignment:**
   - Matches distributed across available courts
