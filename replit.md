@@ -5,7 +5,9 @@
 Michaels Mixer is a web application for managing badminton sessions and player pairings. It focuses on creating balanced matches across multiple game types (Singles, Men's Doubles, Women's Doubles, Mixed Doubles), with intelligent skill-based pairing algorithms. The application helps club organizers manage sessions, track player registrations, and ensure fair, inclusive play for all skill levels.
 
 **Core Features:**
-- **Authentication system** with secure sign-in/register functionality
+- **Role-based authentication system** with admin and player user roles
+- **Admin users:** Full management capabilities (create/edit/delete players, sessions, matches, generate draws)
+- **Player users:** Create own profile with skill assessment, view own scores and match history
 - **Player management** with category-specific skill ratings (1000-2000 scale)
 - **Integrated skill assessment** questionnaire during player creation for immediate ranking
 - Session creation and management with configurable capacity limits (8, 10, 12, 14, 16, 20 players)
@@ -58,14 +60,20 @@ Preferred communication style: Simple, everyday language.
 
 **Users:**
 - Username and hashed password (bcrypt with salt rounds = 10)
+- Role field: 'admin' or 'player' (default: 'player')
 - Session-based authentication (7-day cookie lifetime)
 - Stored in PostgreSQL via Drizzle ORM
+- Admin users have full access to all features
+- Player users can only create own profile and view own scores
 
 **Players:**
 - Demographic info (name, gender, club)
 - Category-specific ratings (singles, men's doubles, women's doubles, mixed doubles)
 - Preferred categories for session participation
 - Optional notes field
+- userId field (nullable) - links player profile to user account
+- Player users can update name/gender but NOT ratings once set
+- Admin users can update all player fields
 
 **Sessions:**
 - Basic info (name, date, capacity, number of rounds)
@@ -217,14 +225,25 @@ RESTful endpoints follow convention:
 - `GET /api/sessions/:sessionId/matches` - Get generated draws for a session
 - `PATCH /api/matches/:id` - Update match scores (triggers automatic rating updates)
 
+**Authorization & Security:**
+- requireAuth middleware: Protects all authenticated endpoints
+- requireAdmin middleware: Protects admin-only routes (POST/PATCH/DELETE for players, sessions, matches, draws)
+- Player-specific routes use req.session.userId server-side (never trust client-supplied userId)
+- Secure endpoints prevent data leakage:
+  - GET /api/players/profile - returns only authenticated user's profile
+  - GET /api/players/profile/matches - returns only authenticated user's matches
+  - POST /api/players/profile - creates profile for authenticated user only
+  - PATCH /api/players/profile - updates name/gender only (not ratings)
+
 **Request/Response Flow:**
 1. Client validates input with Zod schema
 2. TanStack Query mutation sends request
-3. Express middleware parses JSON
-4. Route handler validates again with same Zod schema
-5. Storage layer performs operation
-6. Response returns full entity or error
-7. Query cache invalidated/updated on success
+3. Express middleware parses JSON and checks session
+4. Authorization middleware validates user role (requireAuth or requireAdmin)
+5. Route handler validates again with same Zod schema
+6. Storage layer performs operation (with server-side userId for player routes)
+7. Response returns full entity or error
+8. Query cache invalidated/updated on success
 
 ## External Dependencies
 
