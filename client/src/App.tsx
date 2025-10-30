@@ -46,7 +46,7 @@ export default function App() {
                   <SidebarTrigger data-testid="button-sidebar-toggle" />
                   <div className="flex items-center gap-2">
                     <Trophy className="h-6 w-6 text-primary" />
-                    <span className="text-xl font-bold">BadmintonPro</span>
+                    <span className="text-xl font-bold">Michaels Mixer</span>
                   </div>
                 </div>
                 <ThemeToggle />

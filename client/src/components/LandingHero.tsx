@@ -17,7 +17,7 @@ export default function LandingHero() {
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Trophy className="h-8 w-8 text-primary" />
-              <span className="text-2xl font-bold text-white">BadmintonPro</span>
+              <span className="text-2xl font-bold text-white">Michaels Mixer</span>
             </div>
             <div className="flex items-center gap-4">
               <Button variant="ghost" className="text-white hover:text-white">

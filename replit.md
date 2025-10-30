@@ -1,8 +1,8 @@
-# BadmintonPro - Smart Pairing & Session Management
+# Michaels Mixer - Smart Pairing & Session Management
 
 ## Overview
 
-BadmintonPro is a web application for managing badminton sessions and player pairings. It focuses on creating balanced matches across multiple game types (Singles, Men's Doubles, Women's Doubles, Mixed Doubles), with intelligent skill-based pairing algorithms. The application helps club organizers manage sessions, track player registrations, and ensure fair, inclusive play for all skill levels.
+Michaels Mixer is a web application for managing badminton sessions and player pairings. It focuses on creating balanced matches across multiple game types (Singles, Men's Doubles, Women's Doubles, Mixed Doubles), with intelligent skill-based pairing algorithms. The application helps club organizers manage sessions, track player registrations, and ensure fair, inclusive play for all skill levels.
 
 **Core Features:**
 - Player management with category-specific skill ratings (1000-2000 scale)
