@@ -10,7 +10,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { Trophy } from "lucide-react";
 
 interface LoginProps {
-  onLoginSuccess: (user: { id: string; username: string }) => void;
+  onLoginSuccess: (user: { id: string; username: string; role: 'admin' | 'player'; playerId?: string }) => void;
 }
 
 export default function Login({ onLoginSuccess }: LoginProps) {

@@ -4,12 +4,15 @@ import { useQuery } from "@tanstack/react-query";
 interface User {
   id: string;
   username: string;
+  role: 'admin' | 'player';
+  playerId?: string;
 }
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  isAdmin: boolean;
   setUser: (user: User | null) => void;
 }
 
@@ -38,6 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         isLoading,
         isAuthenticated: !!user,
+        isAdmin: user?.role === 'admin',
         setUser,
       }}
     >
