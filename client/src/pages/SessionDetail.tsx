@@ -99,14 +99,17 @@ export default function SessionDetail() {
     const player = players.find(p => p.id === playerId);
     if (!player) return 1500;
     
-    switch (eventType) {
+    // Normalize event type to handle both formats ("Mixed Doubles" and "mixedDoubles")
+    const normalizedType = eventType.toLowerCase().replace(/['\s]/g, '');
+    
+    switch (normalizedType) {
       case "singles":
         return player.singlesRating || 1500;
-      case "mensDoubles":
+      case "mensdoubles":
         return player.mensDoublesRating || 1500;
-      case "womensDoubles":
+      case "womensdoubles":
         return player.womensDoublesRating || 1500;
-      case "mixedDoubles":
+      case "mixeddoubles":
         return player.mixedDoublesRating || 1500;
       default:
         return 1500;
