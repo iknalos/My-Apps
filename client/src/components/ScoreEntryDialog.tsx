@@ -21,6 +21,8 @@ interface ScoreEntryDialogProps {
   team2Player1: string;
   team2Player2?: string;
   trigger?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   onScoreSubmit: (matchId: string, scores: {
     team1Set1: number;
     team1Set2: number;
@@ -38,9 +40,13 @@ export default function ScoreEntryDialog({
   team2Player1,
   team2Player2,
   trigger,
+  open: controlledOpen,
+  onOpenChange,
   onScoreSubmit,
 }: ScoreEntryDialogProps) {
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setOpen = onOpenChange || setInternalOpen;
   const [team1Set1, setTeam1Set1] = useState("");
   const [team1Set2, setTeam1Set2] = useState("");
   const [team1Set3, setTeam1Set3] = useState("");

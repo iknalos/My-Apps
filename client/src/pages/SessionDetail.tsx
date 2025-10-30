@@ -17,6 +17,7 @@ export default function SessionDetail() {
   const sessionId = params.id;
   const [, setLocation] = useLocation();
   const [activeRound, setActiveRound] = useState(1);
+  const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
   const { toast } = useToast();
 
   const { data: session, isLoading: sessionLoading } = useQuery<Session>({
@@ -45,12 +46,9 @@ export default function SessionDetail() {
         team2Set3: number;
       };
     }) => {
-      return await apiRequest(`/api/matches/${matchId}`, {
-        method: "PATCH",
-        body: JSON.stringify({
-          ...scores,
-          status: "completed",
-        }),
+      return await apiRequest("PATCH", `/api/matches/${matchId}`, {
+        ...scores,
+        status: "completed",
       });
     },
     onSuccess: () => {
@@ -214,19 +212,24 @@ export default function SessionDetail() {
                     <div key={match.id}>
                       <MatchCard
                         {...match}
-                        onEnterScore={() => {}}
+                        onEnterScore={match.status !== "completed" ? () => setSelectedMatchId(match.id) : undefined}
                       />
                       {match.status !== "completed" && (
-                        <div className="mt-2">
-                          <ScoreEntryDialog
-                            matchId={match.id}
-                            team1Player1={match.team1.player1}
-                            team1Player2={match.team1.player2}
-                            team2Player1={match.team2.player1}
-                            team2Player2={match.team2.player2}
-                            onScoreSubmit={handleScoreSubmit}
-                          />
-                        </div>
+                        <ScoreEntryDialog
+                          matchId={match.id}
+                          team1Player1={match.team1.player1}
+                          team1Player2={match.team1.player2}
+                          team2Player1={match.team2.player1}
+                          team2Player2={match.team2.player2}
+                          open={selectedMatchId === match.id}
+                          onOpenChange={(open) => {
+                            if (!open) setSelectedMatchId(null);
+                          }}
+                          onScoreSubmit={(matchId, scores) => {
+                            handleScoreSubmit(matchId, scores);
+                            setSelectedMatchId(null);
+                          }}
+                        />
                       )}
                     </div>
                   ))}
