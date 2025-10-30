@@ -68,7 +68,7 @@ function generateSinglesMatches(
 ): InsertMatch[] {
   const matches: InsertMatch[] = [];
   
-  // Get player ratings
+  // Get player ratings and create stable sorted list
   const playersWithRatings = playerIds.map(id => {
     const player = playerMap.get(id)!;
     return {
@@ -78,12 +78,23 @@ function generateSinglesMatches(
     };
   }).sort((a, b) => b.rating - a.rating);
 
-  // Generate matches for each round
+  const n = playersWithRatings.length;
+  const isOddCount = n % 2 === 1;
+
+  // Generate matches for each round with proper bye rotation
   for (let round = 1; round <= session.numberOfRounds; round++) {
+    // Calculate which player gets bye this round (if odd number)
+    // Rotate through all players: round 1 -> player 0 sits, round 2 -> player 1 sits, etc.
+    let playersThisRound = playersWithRatings;
+    if (isOddCount) {
+      const byePlayerIndex = (round - 1) % n;
+      playersThisRound = playersWithRatings.filter((_, idx) => idx !== byePlayerIndex);
+    }
+    
     const roundMatches = createSinglesRoundMatches(
       session.id,
       round,
-      playersWithRatings,
+      playersThisRound,
       eventType
     );
     matches.push(...roundMatches);
@@ -99,16 +110,19 @@ function createSinglesRoundMatches(
   eventType: string
 ): InsertMatch[] {
   const matches: InsertMatch[] = [];
-  const shuffled = [...players].sort(() => Math.random() - 0.5);
   
-  for (let i = 0; i < shuffled.length - 1; i += 2) {
+  // Use round-robin rotation for opponent variety
+  // Circle method: fix one player, rotate others
+  const pairings = generateRoundRobinPairings(players, roundNumber);
+  
+  for (const pairing of pairings) {
     matches.push({
       sessionId,
       courtNumber: 0,
       roundNumber,
-      team1Player1Id: shuffled[i].id,
+      team1Player1Id: pairing[0].id,
       team1Player2Id: null,
-      team2Player1Id: shuffled[i + 1].id,
+      team2Player1Id: pairing[1].id,
       team2Player2Id: null,
       team1Score: null,
       team2Score: null,
@@ -117,6 +131,39 @@ function createSinglesRoundMatches(
   }
 
   return matches;
+}
+
+function generateRoundRobinPairings(
+  players: PlayerWithRating[],
+  roundNumber: number
+): Array<[PlayerWithRating, PlayerWithRating]> {
+  const pairings: Array<[PlayerWithRating, PlayerWithRating]> = [];
+  const n = players.length;
+  
+  if (n < 2) return pairings;
+  
+  // Circle/round-robin algorithm for opponent variety
+  // Create rotation array: fix first player, rotate others
+  const rotation = [...players];
+  
+  // Rotate based on round number (skip round 1 for natural pairing)
+  const rotations = (roundNumber - 1) % (n - 1);
+  for (let r = 0; r < rotations; r++) {
+    // Rotate all except first element
+    const temp = rotation[n - 1];
+    for (let i = n - 1; i > 1; i--) {
+      rotation[i] = rotation[i - 1];
+    }
+    rotation[1] = temp;
+  }
+  
+  // Pair players: first with last, second with second-last, etc.
+  const half = Math.floor(n / 2);
+  for (let i = 0; i < half; i++) {
+    pairings.push([rotation[i], rotation[n - 1 - i]]);
+  }
+  
+  return pairings;
 }
 
 function generateDoublesMatches(
@@ -152,12 +199,24 @@ function generateDoublesMatches(
     return matches;
   }
 
-  // Generate matches for each round
+  // Create balanced partnerships once (these stay consistent across rounds)
+  const partnerships = createBalancedPartnerships(playersWithRatings, eventType);
+  const partnershipCount = partnerships.length;
+  const isOddPartnershipCount = partnershipCount % 2 === 1;
+
+  // Generate matches for each round with bye rotation
   for (let round = 1; round <= session.numberOfRounds; round++) {
+    // Rotate which partnership gets bye (if odd number)
+    let partnershipsThisRound = partnerships;
+    if (isOddPartnershipCount) {
+      const byePartnershipIndex = (round - 1) % partnershipCount;
+      partnershipsThisRound = partnerships.filter((_, idx) => idx !== byePartnershipIndex);
+    }
+    
     const roundMatches = createDoublesRoundMatches(
       session.id,
       round,
-      playersWithRatings,
+      partnershipsThisRound,
       eventType
     );
     matches.push(...roundMatches);
@@ -166,79 +225,137 @@ function generateDoublesMatches(
   return matches;
 }
 
+function createBalancedPartnerships(
+  players: PlayerWithRating[],
+  eventType: string
+): Array<{ players: [PlayerWithRating, PlayerWithRating]; totalRating: number; }> | Array<{ male: PlayerWithRating; female: PlayerWithRating; totalRating: number; }> {
+  if (eventType === "Mixed Doubles") {
+    return createMixedPartnerships(players);
+  }
+  
+  // For Men's/Women's Doubles, create balanced partnerships
+  const partnerships: Array<{
+    players: [PlayerWithRating, PlayerWithRating];
+    totalRating: number;
+  }> = [];
+  
+  const n = players.length;
+  const half = Math.floor(n / 2);
+  
+  // Snake draft: pair high with low
+  for (let i = 0; i < half; i++) {
+    const p1 = players[i];
+    const p2 = players[n - 1 - i];
+    partnerships.push({
+      players: [p1, p2],
+      totalRating: p1.rating + p2.rating
+    });
+  }
+  
+  // Sort by total rating for balanced matching
+  partnerships.sort((a, b) => b.totalRating - a.totalRating);
+  
+  return partnerships;
+}
+
+function createMixedPartnerships(
+  players: PlayerWithRating[]
+): Array<{ male: PlayerWithRating; female: PlayerWithRating; totalRating: number; }> {
+  const males = players.filter(p => p.gender === "Male").sort((a, b) => b.rating - a.rating);
+  const females = players.filter(p => p.gender === "Female").sort((a, b) => b.rating - a.rating);
+  
+  const partnerships: Array<{
+    male: PlayerWithRating;
+    female: PlayerWithRating;
+    totalRating: number;
+  }> = [];
+  
+  const pairCount = Math.min(males.length, females.length);
+  
+  for (let i = 0; i < pairCount; i++) {
+    partnerships.push({
+      male: males[i],
+      female: females[i],
+      totalRating: males[i].rating + females[i].rating
+    });
+  }
+  
+  // Sort by total rating for balanced matching
+  partnerships.sort((a, b) => b.totalRating - a.totalRating);
+  
+  return partnerships;
+}
+
 function createDoublesRoundMatches(
   sessionId: string,
   roundNumber: number,
-  players: PlayerWithRating[],
+  partnerships: Array<any>,
   eventType: string
 ): InsertMatch[] {
   const matches: InsertMatch[] = [];
 
-  if (eventType === "Mixed Doubles") {
-    return createMixedDoublesMatches(sessionId, roundNumber, players);
-  }
+  if (partnerships.length < 2) return matches;
 
-  // For Men's/Women's Doubles, create balanced teams
-  const shuffled = [...players].sort(() => Math.random() - 0.5);
-  
-  for (let i = 0; i < shuffled.length - 3; i += 4) {
-    matches.push({
-      sessionId,
-      courtNumber: 0,
-      roundNumber,
-      team1Player1Id: shuffled[i].id,
-      team1Player2Id: shuffled[i + 1].id,
-      team2Player1Id: shuffled[i + 2].id,
-      team2Player2Id: shuffled[i + 3].id,
-      team1Score: null,
-      team2Score: null,
-      status: "scheduled",
-    });
+  // Apply round-robin rotation to partnerships for opponent variety
+  const rotatedPartnerships = rotatePartnerships(partnerships, roundNumber);
+
+  // Match adjacent partnerships after rotation
+  for (let i = 0; i < rotatedPartnerships.length - 1; i += 2) {
+    if (eventType === "Mixed Doubles") {
+      // Mixed doubles partnerships have male/female properties
+      matches.push({
+        sessionId,
+        courtNumber: 0,
+        roundNumber,
+        team1Player1Id: rotatedPartnerships[i].male.id,
+        team1Player2Id: rotatedPartnerships[i].female.id,
+        team2Player1Id: rotatedPartnerships[i + 1].male.id,
+        team2Player2Id: rotatedPartnerships[i + 1].female.id,
+        team1Score: null,
+        team2Score: null,
+        status: "scheduled",
+      });
+    } else {
+      // Men's/Women's doubles have players array property
+      const team1 = rotatedPartnerships[i].players;
+      const team2 = rotatedPartnerships[i + 1].players;
+      
+      matches.push({
+        sessionId,
+        courtNumber: 0,
+        roundNumber,
+        team1Player1Id: team1[0].id,
+        team1Player2Id: team1[1].id,
+        team2Player1Id: team2[0].id,
+        team2Player2Id: team2[1].id,
+        team1Score: null,
+        team2Score: null,
+        status: "scheduled",
+      });
+    }
   }
 
   return matches;
 }
 
-function createMixedDoublesMatches(
-  sessionId: string,
-  roundNumber: number,
-  players: PlayerWithRating[]
-): InsertMatch[] {
-  const matches: InsertMatch[] = [];
+function rotatePartnerships(partnerships: Array<any>, roundNumber: number): Array<any> {
+  const n = partnerships.length;
+  if (n < 2) return partnerships;
   
-  // Separate by gender
-  const males = players.filter(p => p.gender === "Male");
-  const females = players.filter(p => p.gender === "Female");
+  // Circle/round-robin rotation for doubles
+  // Fix first partnership, rotate others
+  const rotation = [...partnerships];
+  const rotations = (roundNumber - 1) % (n - 1);
   
-  // Need at least 2 males and 2 females
-  if (males.length < 2 || females.length < 2) {
-    return matches;
+  for (let r = 0; r < rotations; r++) {
+    const temp = rotation[n - 1];
+    for (let i = n - 1; i > 1; i--) {
+      rotation[i] = rotation[i - 1];
+    }
+    rotation[1] = temp;
   }
-
-  // Shuffle for variety
-  const shuffledMales = [...males].sort(() => Math.random() - 0.5);
-  const shuffledFemales = [...females].sort(() => Math.random() - 0.5);
   
-  const pairsCount = Math.min(shuffledMales.length, shuffledFemales.length);
-  const matchCount = Math.floor(pairsCount / 2);
-  
-  for (let i = 0; i < matchCount; i++) {
-    const idx = i * 2;
-    matches.push({
-      sessionId,
-      courtNumber: 0,
-      roundNumber,
-      team1Player1Id: shuffledMales[idx].id,
-      team1Player2Id: shuffledFemales[idx].id,
-      team2Player1Id: shuffledMales[idx + 1].id,
-      team2Player2Id: shuffledFemales[idx + 1].id,
-      team1Score: null,
-      team2Score: null,
-      status: "scheduled",
-    });
-  }
-
-  return matches;
+  return rotation;
 }
 
 function assignCourts(matches: InsertMatch[], courtsAvailable: number): void {
