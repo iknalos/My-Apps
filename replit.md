@@ -5,7 +5,9 @@
 Michaels Mixer is a web application for managing badminton sessions and player pairings. It focuses on creating balanced matches across multiple game types (Singles, Men's Doubles, Women's Doubles, Mixed Doubles), with intelligent skill-based pairing algorithms. The application helps club organizers manage sessions, track player registrations, and ensure fair, inclusive play for all skill levels.
 
 **Core Features:**
-- Player management with category-specific skill ratings (1000-2000 scale)
+- **Authentication system** with secure sign-in/register functionality
+- **Player management** with category-specific skill ratings (1000-2000 scale)
+- **Integrated skill assessment** questionnaire during player creation for immediate ranking
 - Session creation and management with configurable capacity limits (8, 10, 12, 14, 16, 20 players)
 - Player registration system with gender-aware event selection
 - Capacity tracking and session status management
@@ -34,9 +36,11 @@ Preferred communication style: Simple, everyday language.
 
 **Backend:**
 - Express.js server
+- **Authentication system** with bcrypt password hashing and session management
+- **Durable session storage** using connect-pg-simple with PostgreSQL
 - In-memory storage abstraction (IStorage interface) for data persistence
 - RESTful API design
-- Session-based architecture preparation (connect-pg-simple configured)
+- Secure HTTP-only cookies for session management
 
 **Database:**
 - Drizzle ORM configured for PostgreSQL
@@ -51,6 +55,11 @@ Preferred communication style: Simple, everyday language.
 - Consistent spacing system using Tailwind units (2, 4, 6, 8)
 
 ### Data Model
+
+**Users:**
+- Username and hashed password (bcrypt with salt rounds = 10)
+- Session-based authentication (7-day cookie lifetime)
+- Stored in PostgreSQL via Drizzle ORM
 
 **Players:**
 - Demographic info (name, gender, club)
@@ -106,8 +115,10 @@ Preferred communication style: Simple, everyday language.
 
 **Routing Strategy:**
 - Client-side routing with Wouter (lightweight React Router alternative)
+- **Authentication-gated routing**: Unauthenticated users see login/register pages; authenticated users access main app
 - Layout wrapper pattern with persistent sidebar navigation
 - Nested routes for session details
+- AuthContext manages authentication state globally
 
 **Data Fetching:**
 - Query key convention: `["/api/resource", id?]`
@@ -179,6 +190,14 @@ Preferred communication style: Simple, everyday language.
 ### API Structure
 
 RESTful endpoints follow convention:
+
+**Authentication:**
+- `POST /api/auth/register` - Create new user account (auto-login)
+- `POST /api/auth/login` - Authenticate user and create session
+- `POST /api/auth/logout` - Destroy user session
+- `GET /api/auth/me` - Get current authenticated user
+
+**Players:**
 - `GET /api/players` - List all players
 - `GET /api/players/:id` - Get single player
 - `GET /api/players/:id/rating-history` - Get rating history for a player

@@ -1,9 +1,11 @@
 import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
+import connectPgSimple from "connect-pg-simple";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
+const PgSession = connectPgSimple(session);
 
 declare module 'express-session' {
   interface SessionData {
@@ -18,6 +20,10 @@ declare module 'http' {
 }
 
 app.use(session({
+  store: new PgSession({
+    conString: process.env.DATABASE_URL,
+    createTableIfMissing: true,
+  }),
   secret: process.env.SESSION_SECRET || 'michaels-mixer-secret-key-change-in-production',
   resave: false,
   saveUninitialized: false,
