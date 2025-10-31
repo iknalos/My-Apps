@@ -24,8 +24,8 @@ async function migrateToProduction() {
       devDb('SELECT * FROM players ORDER BY name'),
       devDb('SELECT * FROM sessions ORDER BY date'),
       devDb('SELECT * FROM registrations ORDER BY session_id'),
-      devDb('SELECT * FROM matches ORDER BY session_id, round'),
-      devDb('SELECT * FROM rating_histories ORDER BY player_id, match_date')
+      devDb('SELECT * FROM matches ORDER BY session_id, round_number'),
+      devDb('SELECT * FROM rating_histories ORDER BY player_id, created_at')
     ]);
 
     console.log(`\n✅ Found in DEVELOPMENT:`);
@@ -99,11 +99,11 @@ async function migrateToProduction() {
     for (const session of devSessions) {
       if (!existingSessionIds.has(session.id)) {
         await prodDb(
-          `INSERT INTO sessions (id, name, date, capacity, courts, rounds, session_types, status)
+          `INSERT INTO sessions (id, name, date, capacity, courts_available, number_of_rounds, session_types, status)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
           [
             session.id, session.name, session.date, session.capacity,
-            session.courts, session.rounds, session.session_types, session.status
+            session.courts_available, session.number_of_rounds, session.session_types, session.status
           ]
         );
         sessionsInserted++;
@@ -114,11 +114,18 @@ async function migrateToProduction() {
     }
 
     console.log('\n🔄 Migrating REGISTRATIONS...');
-    const prodRegistrations = await prodDb('SELECT id FROM registrations');
+    // Re-fetch production data after insertions
+    const [updatedProdSessions, updatedProdPlayers, prodRegistrations] = await Promise.all([
+      prodDb('SELECT id FROM sessions'),
+      prodDb('SELECT id FROM players'),
+      prodDb('SELECT id FROM registrations')
+    ]);
+    const updatedSessionIds = new Set(updatedProdSessions.map((s: any) => s.id));
+    const updatedPlayerIds = new Set(updatedProdPlayers.map((p: any) => p.id));
     const existingRegistrationIds = new Set(prodRegistrations.map((r: any) => r.id));
     
     for (const reg of devRegistrations) {
-      if (!existingRegistrationIds.has(reg.id) && existingSessionIds.has(reg.session_id) && existingPlayerIds.has(reg.player_id)) {
+      if (!existingRegistrationIds.has(reg.id) && updatedSessionIds.has(reg.session_id) && updatedPlayerIds.has(reg.player_id)) {
         await prodDb(
           'INSERT INTO registrations (id, session_id, player_id, selected_events) VALUES ($1, $2, $3, $4)',
           [reg.id, reg.session_id, reg.player_id, reg.selected_events]
@@ -133,14 +140,15 @@ async function migrateToProduction() {
     const existingMatchIds = new Set(prodMatches.map((m: any) => m.id));
     
     for (const match of devMatches) {
-      if (!existingMatchIds.has(match.id) && existingSessionIds.has(match.session_id)) {
+      if (!existingMatchIds.has(match.id) && updatedSessionIds.has(match.session_id)) {
         await prodDb(
-          `INSERT INTO matches (id, session_id, round, court, event_type, player1_id, player2_id,
-           player3_id, player4_id, team1_set1, team1_set2, team1_set3, team2_set1, team2_set2,
-           team2_set3, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
+          `INSERT INTO matches (id, session_id, round_number, court_number, event_type, 
+           team1_player1_id, team1_player2_id, team2_player1_id, team2_player2_id,
+           team1_set1, team1_set2, team1_set3, team2_set1, team2_set2, team2_set3, status)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
           [
-            match.id, match.session_id, match.round, match.court, match.event_type,
-            match.player1_id, match.player2_id, match.player3_id, match.player4_id,
+            match.id, match.session_id, match.round_number, match.court_number, match.event_type,
+            match.team1_player1_id, match.team1_player2_id, match.team2_player1_id, match.team2_player2_id,
             match.team1_set1, match.team1_set2, match.team1_set3,
             match.team2_set1, match.team2_set2, match.team2_set3, match.status
           ]
@@ -155,13 +163,15 @@ async function migrateToProduction() {
     const existingRatingHistoryIds = new Set(prodRatingHistories.map((r: any) => r.id));
     
     for (const history of devRatingHistories) {
-      if (!existingRatingHistoryIds.has(history.id) && existingPlayerIds.has(history.player_id)) {
+      if (!existingRatingHistoryIds.has(history.id) && updatedPlayerIds.has(history.player_id)) {
         await prodDb(
           `INSERT INTO rating_histories (id, player_id, event_type, old_rating, new_rating,
-           match_id, match_date) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+           rating_change, match_id, opponent_ids, result, expected_outcome)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
           [
             history.id, history.player_id, history.event_type, history.old_rating,
-            history.new_rating, history.match_id, history.match_date
+            history.new_rating, history.rating_change, history.match_id, history.opponent_ids,
+            history.result, history.expected_outcome
           ]
         );
         ratingHistoriesInserted++;
